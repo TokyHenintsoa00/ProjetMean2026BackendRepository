@@ -13,7 +13,7 @@ router.post('/register/boutique',upload.array('photo_voiture', 10),async functio
     try 
     {
         //%comission en fonction du categorie de boutique
-            //=>comission type categirue et insert dans new boutique
+        //=>comission type categirue et insert dans new boutique
         const categorie = {id_categorie:req.body.id_categorie}
         const id_categorie = categorie.id_categorie;
         const find_comission = await CategorieModel.findById(id_categorie);
