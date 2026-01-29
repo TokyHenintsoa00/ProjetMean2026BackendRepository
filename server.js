@@ -15,6 +15,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/mall')
 
 app.use('/role', require('./routes/RoleRoute'));
 app.use('/user',require('./routes/UserRoutes'));
-
+app.use('/categorie',require('./routes/CategorieRoutes'));
+app.use('/boutique',require('./routes/BoutiqueRoute'));
 app.listen(PORT, () => console.log(`Serveur démarré sur le port
 ${PORT}`));

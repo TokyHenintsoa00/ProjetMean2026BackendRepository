@@ -20,7 +20,7 @@ const BoutiqueModel = new mongoose.Schema({
                 size: Number,
                 mimetype: String}],
 
-    id_categorie:{type:mongoose.Schema.Types,ObjectId,
+    id_categorie:{type:mongoose.Schema.Types.ObjectId,
         ref:'CategorieModel'
     },
 
@@ -29,11 +29,12 @@ const BoutiqueModel = new mongoose.Schema({
     commission: {type: Number, required: true},
 
     //active |pending|suspend
-    status:{type:mongoose.Schema.Types.ObjectId,
-        ref:'StatusModel',
-    },
+    // status:{type:mongoose.Schema.Types.ObjectId,
+    //     ref:'StatusModel',
+    // },
+    status:{type:String,required:true},
     rating:{type: Number,required:true,min:0,max:5},
 
     loyer:{type: Number,required:true}
 });
-module.exports = mongoose.model('BoutiqueModel',BoutiqueModel);
+module.exports = mongoose.model('Boutique',BoutiqueModel);

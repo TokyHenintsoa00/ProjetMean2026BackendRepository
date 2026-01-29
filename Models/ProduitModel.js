@@ -35,3 +35,5 @@ const ProduitModel = new mongoose.Schema({
         prix_hors_taxe: {type: Number, required: true}
     }]
 });
+
+module.exports = mongoose.model('Produit',ProduitModel);

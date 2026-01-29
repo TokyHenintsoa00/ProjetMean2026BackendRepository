@@ -9,3 +9,5 @@ const CategorieModel = new mongoose.Schema({
             max: 100
     },
 });
+
+module.exports = mongoose.model('Categorie',CategorieModel);
