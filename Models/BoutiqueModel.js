@@ -8,8 +8,6 @@ const BoutiqueModel = new mongoose.Schema({
         type:mongoose.Schema.Types.ObjectId,
         ref:'UserModel'},
 
-    nom_boutique:{type:String,required:true},
-
     description:{type:String,required:true},
     
     logo:{  filename: String,
@@ -28,13 +26,9 @@ const BoutiqueModel = new mongoose.Schema({
 
     location:{type:String ,required:true},
     
-    commission: {
-        type: Number,
-        required: true,
-            min: 0,
-            max: 100
-    },
+    commission: {type: Number, required: true},
 
+    //active |pending|suspend
     status:{type:mongoose.Schema.Types.ObjectId,
         ref:'StatusModel',
     },
