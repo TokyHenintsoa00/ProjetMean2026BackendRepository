@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userModel = require('../Models/UserModel')
 const multer = require('multer');
+const bcrypt = require('bcrypt');
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
@@ -12,14 +13,21 @@ router.post('/register/user', upload.array('photo_voiture', 1), async(req, res) 
     try {
         const date = new Date();
         
+        const{nom_client,prenom_client,email,pwd,
+                date_naissance,role,numero_telephone,avatar} = req.body;
+
+          const hashedPassword = await bcrypt.hash(pwd, 10);
+
         
         const newUser = new userModel({
-            nom_client: req.body.nom_client,
-            prenom_client: req.body.prenom_client,
-            date_naissance: req.body.date_naissance,
-            role: req.body.role,
-            numero_telephone: req.body.numero_telephone,
-            avatar: req.body.avatar,
+            nom_client,
+            prenom_client,
+            email,
+            pwd:hashedPassword,
+            date_naissance,
+            role,
+            numero_telephone,
+            avatar,
             is_active: false,
             created_at: date,
             updated_at: null
