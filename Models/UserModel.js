@@ -4,6 +4,8 @@ const UserModel = new mongoose.Schema({
 
     nom_client:{type:String,required:true},
     prenom_client:{type:String,required:true},
+    email:{type:String,required:true},
+    pwd:{type:String,required:true},
     date_naissance:{type:Date,required:true},
     role:{type:mongoose.Schema.Types.ObjectId,
             ref:'RoleModel'},
