@@ -9,6 +9,16 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // 10Mo max par fichier
 });
 
+router.get('/getAll',async function(req,res){
+    try {
+        const boutique = await boutiqueModel.find();
+        res.json(boutique);
+    } catch (error) {
+        console.log("l'erreur "+error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+})
+
 router.post('/register/boutique',upload.array('photo_voiture', 10),async function(req,res){
     try 
     {

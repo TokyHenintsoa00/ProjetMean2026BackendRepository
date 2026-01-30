@@ -35,6 +35,8 @@ const BoutiqueModel = new mongoose.Schema({
     status:{type:String,required:true},
     rating:{type: Number,required:true,min:0,max:5},
 
-    loyer:{type: Number,required:true}
+    loyer:{type: Number,required:true},
+
+    //total_charge_commercial:{type: Number, required:true}
 });
 module.exports = mongoose.model('Boutique',BoutiqueModel);
