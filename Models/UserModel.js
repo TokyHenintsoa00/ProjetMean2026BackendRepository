@@ -9,7 +9,7 @@ const UserModel = new mongoose.Schema({
     date_naissance:{type:Date,required:true},
     role:{type:mongoose.Schema.Types.ObjectId,
             ref:'RoleModel'},
-    numero_telephone:{type:Number , required:true},
+    numero_telephone:{type:String , required:true},
     avatar:{filename:String,url:String,size:Number,mintype:String},
     is_active:{type:Boolean , required:true},
     created_at:{type:Date , reqired:true},
