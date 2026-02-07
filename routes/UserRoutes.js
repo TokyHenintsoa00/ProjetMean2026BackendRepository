@@ -330,6 +330,57 @@ router.post('/find/role/by/email',async(req,res)=>{
     }
 });
 
+//route speclial admin
+router.post('/administrator/login/user', async function (req,res) {
+    try 
+    {
+        const {email,pwd,rememberMe} = req.body;
+        
+        const find_user = await userModel.findOne({email});  
+        
+        
+        const compare_pwd = await bcrypt.compare(pwd,find_user.pwd);
+
+                if (!find_user&&!compare_pwd) {
+                    alert("email ou pwd non reconnue")
+                    console.log("email ou non reconnue");
+                }
+
+                //generateToken dans utils/tokenConfig
+                const tokenExpiration = rememberMe ? '30d' : '1d';
+                const cookieMaxAge = rememberMe 
+                    ? 30 * 24 * 60 * 60 * 1000  // 30 jours
+                    : 24 * 60 * 60 * 1000;       // 1 jour
+                const token = generateToken(find_user,tokenExpiration);
+                
+                //  STOCKER LE TOKEN 
+                // DANS UN COOKIE HTTP ONLY 
+                res.cookie("token_user", token, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === "production", // HTTPS en prod
+                    sameSite: "strict",
+                    maxAge: cookieMaxAge
+                });
+
+
+            res.status(200).json({
+                message: "Connexion réussie",
+                // token,
+                // find_user: {
+                //     id_user: find_user._id,
+                //     email_user: find_user.email,
+                //     role_user_id: find_user.role,
+
+                // }
+        }); 
+
+        
+    } catch (error) {
+        
+    }
+})
+
+//route pour client et boutique
 router.post('/login/user',async(req,res)=>{
     try 
     {
@@ -351,8 +402,6 @@ router.post('/login/user',async(req,res)=>{
 
         //  console.log("id boutique:"+id_boutique);
         
-
-
         const compare_pwd = await bcrypt.compare(pwd,find_user.pwd);
 
         if (!find_user&&!compare_pwd) {

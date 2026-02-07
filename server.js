@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 // Middleware
 app.use(cors({
@@ -14,13 +14,13 @@ app.use(cors({
 }));
 app.use(express.json());
 
-mongoose.connect('mongodb://127.0.0.1:27017/mall')
-  .then(() => console.log('MongoDB connecté'))
-  .catch(err => console.error(err));
-
-// mongoose.connect('mongodb+srv://projetmean_db_user:ghBVzF5ZfPjdNTDf@cluster0.mqn9zli.mongodb.net/?appName=Cluster0')
+// mongoose.connect('mongodb://127.0.0.1:27017/mall')
 //   .then(() => console.log('MongoDB connecté'))
 //   .catch(err => console.error(err));
+
+mongoose.connect(process.env.atlas_URL)
+  .then(() => console.log('MongoDB connecté'))
+  .catch(err => console.error('Erreur MongoDB:', err));
 
 
 app.use('/role', require('./routes/RoleRoute'));
