@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const boutiqueModel = require('../Models/BoutiqueModel');
 const multer = require('multer');
-const CategorieModel = require('../Models/CategorieModel');
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
@@ -22,14 +21,6 @@ router.get('/getAll',async function(req,res){
 router.post('/register/boutique',upload.array('photo_voiture', 10),async function(req,res){
     try 
     {
-        //%comission en fonction du categorie de boutique
-        //=>comission type categirue et insert dans new boutique
-        const categorie = {id_categorie:req.body.id_categorie}
-        const id_categorie = categorie.id_categorie;
-        const find_comission = await CategorieModel.findById(id_categorie);
-        const comission = find_comission.commission;
-        //console.log(comisssion);
-        
         const newBoutique = new boutiqueModel({
             nom_boutique:req.body.nom_boutique,
             manager_id : req.body.manager_id,
@@ -38,7 +29,7 @@ router.post('/register/boutique',upload.array('photo_voiture', 10),async functio
             photo_boutique:req.body.photo_boutique,
             id_categorie:req.body.id_categorie,
             location:req.body.location,
-            commission:comission,
+            commission:req.body.commission,
             status:req.body.status,
             rating:req.body.rating,
             loyer:req.body.loyer

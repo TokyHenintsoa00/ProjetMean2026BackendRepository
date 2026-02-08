@@ -20,8 +20,7 @@
   },
   "homepage": "https://github.com/TokyHenintsoa00/ProjetMean2026BackendRepository#readme",
   "dependencies": {
-    "@sendinblue/client": "^3.3.1",
-    "bcrypt": "^6.0.0",
+"bcrypt": "^6.0.0",
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
     "crypto": "^1.0.1",

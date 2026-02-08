@@ -14,7 +14,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-mongoose.connect('mongodb://127.0.0.1:27017/mall')
+mongoose.connect('mongodb://projetmean_db_user:ghBVzF5ZfPjdNTDf@ac-fiaerrp-shard-00-00.mqn9zli.mongodb.net:27017,ac-fiaerrp-shard-00-01.mqn9zli.mongodb.net:27017,ac-fiaerrp-shard-00-02.mqn9zli.mongodb.net:27017/mall?ssl=true&replicaSet=atlas-13mg2x-shard-0&authSource=admin')
   .then(() => console.log('MongoDB connecté'))
   .catch(err => console.error(err));
 

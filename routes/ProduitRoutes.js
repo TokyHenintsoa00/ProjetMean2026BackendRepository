@@ -39,7 +39,7 @@ router.post('/register/addProduit',upload.array('photo_user', 1),authMiddlware,a
             prix_hors_taxe:req.body.prix_hors_taxe,
             image:photo,
             id_categorie:req.body.id_categorie,
-            sous_categorie:req.body.sous_categorie,
+            id_sous_categorie:req.body.id_sous_categorie,
             stock:req.body.stock,
             rating:null,
             total_avis:null,

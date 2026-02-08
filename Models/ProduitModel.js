@@ -14,11 +14,11 @@ const ProduitModel = new mongoose.Schema({
                 url: String,
                 size: Number,
                 mimetype: String}, //1
-    id_categorie:{type:mongoose.Schema.Types,ObjectId, //1
-                    ref:'CategorieModel'},
+    id_categorie:{type:mongoose.Schema.Types.ObjectId,
+                    ref:'Categorie'},
 
-    //sous categorie => categorie produit
-    sous_categorie:{type:String,required:true},
+    id_sous_categorie:{type:mongoose.Schema.Types.ObjectId,
+                    ref:'Categorie', default:null},
     //total stock dans variante
     stock:{type:Number,required:true}, //1
     rating:{type:Number, required:true,min:0,max:5}, //null for first insert
