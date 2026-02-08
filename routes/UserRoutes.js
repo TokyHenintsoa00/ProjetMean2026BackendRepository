@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { body, validationResult } = require('express-validator');
 const { generateToken } = require('../utils/TokenConfig');
+const UserModel = require('../Models/UserModel');
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
@@ -567,6 +568,25 @@ router.get('/password/forgotPassword',async(req,res)=>{
         });
         
     }
+})
+
+//find user manager by email 
+router.get('/findBy/email',async function (req,res) {
+    try 
+    {
+        const {email} = req.body;
+        const getUserByemail = await UserModel.find({email:email,role:"697b0d19b784b5da2ab3ba22"});
+
+        res.json(getUserByemail);
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message:"error serveur",
+            error:error.message
+        });
+    }
+
 })
 
 

@@ -17,8 +17,45 @@ router.get('/getAll',async function(req,res){
         console.log("l'erreur "+error);
         res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
-})
+});
 
+//router register boutique by admin
+
+router.post('/register/boutique/byAdmin',upload.array('photo_voiture', 10),async function(req,res){
+    try 
+    {
+        //%comission en fonction du categorie de boutique
+        //=>comission type categirue et insert dans new boutique
+        const categorie = {id_categorie:req.body.id_categorie}
+        const id_categorie = categorie.id_categorie;
+        const find_comission = await CategorieModel.findById(id_categorie);
+        const comission = find_comission.commission;
+        //console.log(comisssion);
+        
+        const newBoutique = new boutiqueModel({
+            nom_boutique:req.body.nom_boutique,
+            manager_id : req.body.manager_id,
+            description: req.body.description,
+            logo: req.body.logo,
+            photo_boutique:req.body.photo_boutique,
+            id_categorie:req.body.id_categorie,
+            location:req.body.location,
+            status:null,
+            rating:null,
+            loyer:req.body.loyer
+        });
+
+        await newBoutique.save();
+        console.log("insertion boutique reussie");
+        res.status(200).json({ message: "Utilisateur créé avec succès" });
+    } catch (error) {
+        console.log("l'erreur "+error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+
+    }
+});
+
+// router register boutique
 router.post('/register/boutique',upload.array('photo_voiture', 10),async function(req,res){
     try 
     {
@@ -52,6 +89,6 @@ router.post('/register/boutique',upload.array('photo_voiture', 10),async functio
         res.status(500).json({ message: "Erreur serveur", error: error.message });
 
     }
-})
+});
 
 module.exports = router;

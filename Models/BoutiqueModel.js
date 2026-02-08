@@ -26,7 +26,7 @@ const BoutiqueModel = new mongoose.Schema({
 
     location:{type:String ,required:true},
     
-    commission: {type: Number, required: true},
+    // commission: {type: Number, required: true},
 
     //active |pending|suspend
     // status:{type:mongoose.Schema.Types.ObjectId,

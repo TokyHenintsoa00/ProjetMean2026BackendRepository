@@ -5,10 +5,10 @@ const CategorieModel = require('../Models/CategorieModel');
 router.post('/register/categorie',async(req,res)=>{
     try 
     {
-        const {nom_categorie,commission} = req.body;
+        const {nom,parent} = req.body;
         const categorie = new CategorieModel( {
-            nom_categorie,
-            commission
+            nom,
+            parent
         });
 
         await categorie.save();
@@ -19,11 +19,11 @@ router.post('/register/categorie',async(req,res)=>{
 });
 
 
-router.get('/getAll',async(req,res)=>{
+router.get('/getAll/boutique',async(req,res)=>{
 
     try
     {
-        const categorie = await CategorieModel.find();
+        const categorie = await CategorieModel.find({parent:null});
         res.json(categorie);
     } catch(error){
         console.log("l'erreur "+error);
