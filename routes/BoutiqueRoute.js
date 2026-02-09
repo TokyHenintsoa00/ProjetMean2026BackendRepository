@@ -55,6 +55,8 @@ router.post('/register/boutique/byAdmin',upload.array('photo_voiture', 10),async
     }
 });
 
+
+
 // router register boutique
 router.post('/register/boutique',upload.array('photo_voiture', 10),async function(req,res){
     try 

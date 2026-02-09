@@ -10,7 +10,12 @@ const UserModel = new mongoose.Schema({
     role:{type:mongoose.Schema.Types.ObjectId,
             ref:'RoleModel'},
     numero_telephone:{type:String , required:true},
-    avatar:{filename:String,url:String,size:Number,mintype:String},
+    avatar: [{
+        filename: String,
+        url: String,
+        size: Number,
+        mimetype: String
+    }],
     resetPasswordToken: {type: String, default: undefined },
     resetPasswordExpiry: { type: Date, default: undefined },
     is_active:{type:Boolean , required:true},
