@@ -10,15 +10,19 @@ const BoutiqueModel = new mongoose.Schema({
 
     description:{type:String,required:true},
     
-    logo:{  filename: String,
-            url: String,
-            size: Number,
-            mimetype: String},
+    logo:[{
+        filename: String,
+        url: String,
+        size: Number,
+        mimetype: String
+    }],
     
-    photo_boutique:[{   filename: String,
-                url: String,
-                size: Number,
-                mimetype: String}],
+    photo_boutique:[{
+        filename: String,
+        url: String,
+        size: Number,
+        mimetype: String
+    }],
 
     id_categorie:{type:mongoose.Schema.Types.ObjectId,
         ref:'CategorieModel'

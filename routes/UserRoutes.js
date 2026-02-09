@@ -449,7 +449,7 @@ router.post('/login/user',async(req,res)=>{
 
 //router pour add manager boutique
 router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
-    // ... validations
+    // ... validations mdp etc
 ], async (req, res) => {
     try {
         console.log('📥 Requête reçue');
@@ -468,13 +468,7 @@ router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
         let avatarData = [];
         if (req.files && req.files.length > 0) {
             const uploadDir = path.join(__dirname, '../uploads/avataruser');
-            await fs.mkdir(uploadDir, { recursive: true });
-
-             // ✅ CHEMIN 2 : Frontend Angular
-            // Ajustez le chemin selon votre structure de projet
-            const frontendUploadDir = path.join(__dirname, '../../ProjetMean2026FrontendRepository/src/assets/images/avatarUser');
-            await fs.mkdir(frontendUploadDir, { recursive: true });
-            
+            await fs.mkdir(uploadDir, { recursive: true });            
             for (const file of req.files) {
                 const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
                 const ext = path.extname(file.originalname);
