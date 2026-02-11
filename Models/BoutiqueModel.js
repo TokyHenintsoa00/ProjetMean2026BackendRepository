@@ -6,9 +6,9 @@ const BoutiqueModel = new mongoose.Schema({
     //ref: id user dans model USER
     manager_id:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:'UserModel'},
+        ref:'User'},
 
-    description:{type:String,required:true},
+    description_boutique:{type:String,required:true},
     
     logo:[{
         filename: String,
@@ -25,7 +25,7 @@ const BoutiqueModel = new mongoose.Schema({
     }],
 
     id_categorie:{type:mongoose.Schema.Types.ObjectId,
-        ref:'CategorieModel'
+        ref:'Categorie'
     },
 
     location:{type:String ,required:true},
@@ -37,7 +37,7 @@ const BoutiqueModel = new mongoose.Schema({
     //     ref:'StatusModel',
     // },
     status:{type:String,required:true},
-    rating:{type: Number,required:true,min:0,max:5},
+    rating:{type: Number,required:false,min:0,max:5},
 
     loyer:{type: Number,required:true},
 

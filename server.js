@@ -4,7 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT;
-
+const path = require('path');
 // Middleware
 app.use(cors({
   origin: 'http://localhost:4200', // URL de votre frontend Angular
@@ -22,7 +22,7 @@ mongoose.connect(process.env.atlas_URL)
   .then(() => console.log('MongoDB connecté'))
   .catch(err => console.error('Erreur MongoDB:', err));
 
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/role', require('./routes/RoleRoute'));
 app.use('/user',require('./routes/UserRoutes'));
 app.use('/categorie',require('./routes/CategorieRoutes'));
