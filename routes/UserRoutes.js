@@ -770,6 +770,42 @@ router.get('/findBy/email',async function (req,res) {
 
 })
 
+// desactive account
+
+router.put('/account/desactive',async function(req,res){
+    try 
+    {
+        const {_id} = req.body;
+        const update_is_active = await UserModel.findByIdAndUpdate(
+            _id,
+            { 
+                is_active: false,
+                updated_at: new Date()
+            },
+            { new: true } // retourne la nouvelle version
+        );
+
+        if (!update_is_active) {
+            return res.status(404).json({
+                message: "Utilisateur non trouvé"
+            });
+        }
+
+        res.status(200).json({
+            message: "Compte désactivé avec succès",
+            user: update_is_active
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message:"error serveur",
+            error:error.message
+        });
+    }
+});
+
+//activer account
 
 // router.post('/commande-produit', authMiddleware, async (req, res) => {
 //     try {
