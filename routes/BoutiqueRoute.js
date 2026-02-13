@@ -40,6 +40,8 @@ router.get('/getAll/status/active',async function(req,res){
     }
 });
 
+// get tous les boutique non valide v=>boutique:pendding
+
 // get avecntoutes les infos 
 router.get('/getAll/content',async function(req,res){
     try {

@@ -447,12 +447,19 @@ router.post('/login/user',async(req,res)=>{
     }
 });
 
-//router demamnde de boutique par client
 
 
 //router pour add manager boutique
 router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
     // ... validations mdp etc
+       body('pwd')
+            .notEmpty()
+            .withMessage('Le mot de passe est requis')
+            .isLength({ min: 8 })
+            .withMessage('Le mot de passe doit contenir au moins 8 caractères')
+            .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z/*@#!$%]{8,}$/)
+            .withMessage('Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractere speciaux')
+
 ], async (req, res) => {
     try {
         console.log('📥 Requête reçue');
