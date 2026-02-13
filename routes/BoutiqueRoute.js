@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const boutiqueModel = require('../Models/BoutiqueModel');
 const multer = require('multer');
 const CategorieModel = require('../Models/CategorieModel');
@@ -21,6 +22,21 @@ router.get('/getAll',async function(req,res){
     } catch (error) {
         console.log("l'erreur "+error);
         res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+//boutique avec status active
+router.get('/getAll/status/active',async function(req,res){
+    try {
+        const boutique = await boutiqueModel.find({
+             status: new mongoose.Types.ObjectId("6986f4cce38c7e27ea86c043")
+        })
+        .populate('status')
+        res.json(boutique);
+    } catch (error) {
+        console.log("l'erreur "+error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+
     }
 });
 

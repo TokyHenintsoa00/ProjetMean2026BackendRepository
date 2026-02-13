@@ -447,6 +447,9 @@ router.post('/login/user',async(req,res)=>{
     }
 });
 
+//router demamnde de boutique par client
+
+
 //router pour add manager boutique
 router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
     // ... validations mdp etc
@@ -508,7 +511,7 @@ router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
             role,
             numero_telephone,
             avatar: avatarData, // ✅ Assignation explicite
-            is_active: false,
+            is_active: true,
             created_at: date,
             updated_at: null
         };

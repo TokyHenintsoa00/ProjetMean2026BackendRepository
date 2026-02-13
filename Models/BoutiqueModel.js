@@ -36,7 +36,9 @@ const BoutiqueModel = new mongoose.Schema({
     // status:{type:mongoose.Schema.Types.ObjectId,
     //     ref:'StatusModel',
     // },
-    status:{type:String,required:true},
+    status:{type:mongoose.Schema.Types.ObjectId,
+        ref:'Status'
+    },
     rating:{type: Number,required:false,min:0,max:5},
 
     loyer:{type: Number,required:true},
