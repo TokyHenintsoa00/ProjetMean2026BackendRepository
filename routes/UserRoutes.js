@@ -447,7 +447,117 @@ router.post('/login/user',async(req,res)=>{
     }
 });
 
+//router pour demande de boutique en manager
+router.post('/register/permission/manager/boutique/byClient',upload.array('avatar', 1),[
+   
+],async(req,res)=>{
+    try {
+        console.log('📥 Requête reçue');
+        console.log('Body:', req.body);
+        console.log('Files:', req.files);
 
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                message: "Erreur de validation",
+                errors: errors.array()
+            });
+        }
+
+        // Sauvegarder les fichiers avatar
+        let avatarData = [];
+        if (req.files && req.files.length > 0) {
+            const uploadDir = path.join(__dirname, '../uploads/avataruser');
+            await fs.mkdir(uploadDir, { recursive: true });            
+            for (const file of req.files) {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                const ext = path.extname(file.originalname);
+                const filename = `avatar-${uniqueSuffix}${ext}`;
+                const filepath = path.join(uploadDir, filename);
+                
+                await fs.writeFile(filepath, file.buffer);
+                
+                const avatarObject = {
+                    filename: filename,
+                    url: `/uploads/avataruser/${filename}`,
+                    size: file.size,
+                    mimetype: file.mimetype
+                };
+                
+                avatarData.push(avatarObject);
+                console.log('✅ Avatar préparé pour BDD:', avatarObject);
+            }
+        }
+
+        console.log('📊 avatarData final:', avatarData);
+        console.log('📊 Longueur avatarData:', avatarData.length);
+
+        const { nom_client, prenom_client, email, pwd,
+                date_naissance, role, numero_telephone, rememberMe } = req.body;
+        
+        const hashedPassword = await bcrypt.hash(pwd, 10);
+        const date = new Date();
+        
+        // ✅ Objet utilisateur à créer
+        const userData = {
+            nom_client,
+            prenom_client,
+            email,
+            pwd: hashedPassword,
+            date_naissance,
+            role,
+            numero_telephone,
+            avatar: avatarData, // ✅ Assignation explicite
+            is_active: false,
+            created_at: date,
+            updated_at: null
+        };
+
+        console.log('📝 Données utilisateur avant création:', JSON.stringify(userData, null, 2));
+        
+        const newUser = new userModel(userData);
+        
+        console.log('🔍 newUser.avatar AVANT save:', newUser.avatar);
+        
+        await newUser.save();
+        
+        console.log('✅ Utilisateur sauvegardé dans MongoDB');
+        console.log('🔍 newUser.avatar APRÈS save:', newUser.avatar);
+        
+        // Vérifier en base
+        const verifyUser = await userModel.findById(newUser._id);
+        console.log('🔍 Avatar vérifié en BDD:', verifyUser.avatar);
+        
+        const tokenExpiration = rememberMe === 'true' ? '30d' : '1d';
+        const cookieMaxAge = rememberMe === 'true'
+            ? 30 * 24 * 60 * 60 * 1000
+            : 24 * 60 * 60 * 1000;
+        
+        const token = generateToken(newUser, tokenExpiration);
+        
+        res.cookie("token_user", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: cookieMaxAge
+        });
+
+        res.status(201).json({
+            message: "Utilisateur créé avec succès",
+            user: {
+                id: newUser._id,
+                nom_client: newUser.nom_client,
+                prenom_client: newUser.prenom_client,
+                email: newUser.email,
+                avatar: newUser.avatar // ✅ Retourner l'avatar
+            }
+        });
+    } catch (error) {
+        console.error('❌ Erreur complète:', error);
+        console.error('❌ Stack:', error.stack);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
 
 //router pour add manager boutique
 router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
@@ -811,8 +921,10 @@ router.put('/account/active',async function (req,res) {
         });
     }
 })
-// desactive account
 
+
+
+// desactive account
 router.put('/account/desactive',async function(req,res){
     try 
     {

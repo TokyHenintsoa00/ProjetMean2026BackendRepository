@@ -42,7 +42,7 @@ router.get('/getAll/status/active',async function(req,res){
 
 // get tous les boutique non valide v=>boutique:pendding
 
-// get avecntoutes les infos 
+// get avec toutes les infos 
 router.get('/getAll/content',async function(req,res){
     try {
         const boutique = await boutiqueModel.find()
@@ -50,12 +50,51 @@ router.get('/getAll/content',async function(req,res){
             .populate('manager_id')
         res.json(boutique);
     } catch (error) {
-         console.log("l'erreur "+error);
+        console.log("l'erreur "+error);
         res.status(500).json({ message: "Erreur serveur", error: error.message });
 
     }
     
 });
+
+//get toutes les demande de boutique en attente
+router.get('/getAll/status/pending',async function(req,res){
+    try {
+           const boutique = await boutiqueModel.find({
+             status: new mongoose.Types.ObjectId("6986f4f4e38c7e27ea86c045")
+            })
+            .populate('id_categorie')
+            .populate('manager_id')
+            res.json(boutique);
+    } catch (error) {
+        console.log("l'erreur "+error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+
+    }
+});
+
+
+// get avec toutes les infos V1
+//avec status en ligne et suspend
+router.get('/getAll/content/V1',async function(req,res){
+    try {
+            const boutique = await boutiqueModel.find({
+                status: { 
+                    $in: [
+                        new mongoose.Types.ObjectId("6986f4cce38c7e27ea86c043"),
+                        new mongoose.Types.ObjectId("6986f513e38c7e27ea86c047")
+                        ]
+                }
+            })
+                .populate('id_categorie')
+                .populate('manager_id')
+                res.json(boutique);
+    } catch (error) {
+        console.log("l'erreur "+error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+
+    }
+})
 
 //router register boutique by admin
 
@@ -180,7 +219,7 @@ router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
         const status_boutique = "6986f4f4e38c7e27ea86c045";
         
         const {nom_boutique,id_categorie,
-                location,loyer,description_boutique} = req.body;
+                description_boutique} = req.body;
 
         const boutiqueData = {
             
@@ -190,10 +229,10 @@ router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
             logo:logo_boutique,
             photo_boutique:photo_boutique,
             id_categorie:id_categorie,
-            location:location,
+            location:null,
             status:status_boutique,
             rating:null,
-            loyer
+            loyer:null
 
         }
         
@@ -214,8 +253,8 @@ router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
 
     } catch (error) {
          console.error('Erreur complète:', error);
-        // console.error('Stack:', error.stack);
-        // res.status(500).json({ message: "Erreur serveur", error: error.message });
+        console.error('Stack:', error.stack);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
    
     }
 })
@@ -377,5 +416,40 @@ router.post('/register/boutique',upload.array('photo_voiture', 10),async functio
 
     }
 });
+
+
+//activation de boutique
+router.put('/boutique/active',async function(req,res){
+    try 
+    {
+        const {_id} = req.body;
+        const update_active_boutique = await BoutiqueModel.findByIdAndUpdate(
+            _id,
+            {
+                status: new mongoose.Types.ObjectId('6986f4cce38c7e27ea86c043')
+            },
+            { new: true } 
+        );    
+
+         if (!update_active_boutique) {
+            return res.status(404).json({
+                message: "Utilisateur non trouvé"
+            });
+        }
+
+        res.status(200).json({
+            message: "Compte active avec succès",
+            user: update_active_boutique
+        });    
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message:"error serveur",
+            error:error.message
+        });
+    }
+})
+
 
 module.exports = router;

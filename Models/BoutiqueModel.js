@@ -28,7 +28,7 @@ const BoutiqueModel = new mongoose.Schema({
         ref:'Categorie'
     },
 
-    location:{type:String ,required:true},
+    location:{type:String ,required:false},
     
     // commission: {type: Number, required: true},
 
@@ -41,7 +41,7 @@ const BoutiqueModel = new mongoose.Schema({
     },
     rating:{type: Number,required:false,min:0,max:5},
 
-    loyer:{type: Number,required:true},
+    loyer:{type: Number,required:false},
 
     //total_charge_commercial:{type: Number, required:true}
 });
