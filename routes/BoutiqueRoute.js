@@ -417,9 +417,45 @@ router.post('/register/boutique',upload.array('photo_voiture', 10),async functio
     }
 });
 
+//suspend account
+router.put('/update/status/to/suspend',async function(req,res){
+   
+    try {
+        
+        const {_id} = req.body;
+        const update_active_boutique = await BoutiqueModel.findByIdAndUpdate(
+            _id,
+            {
+                status: new mongoose.Types.ObjectId('6986f513e38c7e27ea86c047')
+            },
+            { new: true } 
+        );    
+
+         if (!update_active_boutique) {
+            return res.status(404).json({
+                message: "Utilisateur non trouvé"
+            });
+        }
+
+        res.status(200).json({
+            message: "Compte active avec succès",
+            user: update_active_boutique
+        });  
+
+        
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message:"error serveur",
+            error:error.message
+        });
+    }
+    
+});
 
 //activation de boutique
-router.put('/boutique/active',async function(req,res){
+router.put('/update/status/to/active',async function(req,res){
     try 
     {
         const {_id} = req.body;
@@ -451,5 +487,47 @@ router.put('/boutique/active',async function(req,res){
     }
 })
 
+//update location and loyer
+router.put('/update/location/and/loyer',async function(req,res){
+    try {
+        const { _id, location, loyer } = req.body;
+        
+       
+        if (!_id) {
+            return res.status(400).json({ 
+                error: 'ID requis' 
+            });
+        }
+        
+        if (!location && !loyer) {
+            return res.status(400).json({ 
+                error: 'Au moins location ou loyer doit être fourni' 
+            });
+        }
+        
+       
+        const updateData = {};
+        if (location) updateData.location = location;
+        if (loyer) updateData.loyer = loyer;
+
+        const update = await BoutiqueModel.findByIdAndUpdate(
+            _id,
+            {$set:updateData},
+            { new: true }
+        );
+
+         res.status(200).json({
+            message: "update de location et loyer",
+            user: update_active_boutique
+        });  
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message:"error serveur",
+            error:error.message
+        });
+    }
+})
 
 module.exports = router;
