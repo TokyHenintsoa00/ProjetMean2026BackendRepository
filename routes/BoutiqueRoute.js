@@ -518,7 +518,7 @@ router.put('/update/location/and/loyer',async function(req,res){
 
          res.status(200).json({
             message: "update de location et loyer",
-            user: update_active_boutique
+            user: update
         });  
 
     } catch (error) {
