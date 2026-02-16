@@ -147,20 +147,16 @@ router.post('/password/forgotPassword', [
                             
                             <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
                             
-                            <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
                             
-                            <div style="text-align: center;">
-                                <a href="${resetUrl}" class="button">Réinitialiser mon mot de passe</a>
-                            </div>
                             
-                            <p>Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :</p>
+                            <p>cliquez sur ce lien dans votre navigateur :</p>
                             <p style="word-break: break-all; color: #4CAF50;">${resetUrl}</p>
                             
                             <p><strong>Ce lien est valide pendant 1 heure.</strong></p>
                             
                             <p>Si vous n'avez pas demandé cette réinitialisation, ignorez simplement cet email.</p>
                             
-                            <p>Cordialement,<br>L'équipe ${process.env.APP_NAME || 'Votre Application'}</p>
+                            <p>Cordialement,<br>L'équipe du ${process.env.APP_NAME || 'Votre Application'}</p>
                         </div>
                         <div class="footer">
                             <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>

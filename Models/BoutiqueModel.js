@@ -17,6 +17,8 @@ const BoutiqueModel = new mongoose.Schema({
         mimetype: String
     }],
     
+    
+
     photo_boutique:[{
         filename: String,
         url: String,
@@ -29,6 +31,15 @@ const BoutiqueModel = new mongoose.Schema({
     },
 
     location:{type:String ,required:false},
+
+    horaires: [{
+        jour: { type: String, required: true, enum: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] },
+        ouverture: { type: String },
+        fermeture: { type: String },
+        est_ferme: { type: Boolean, default: false }
+    }],
+
+
     
     // commission: {type: Number, required: true},
 
@@ -39,9 +50,15 @@ const BoutiqueModel = new mongoose.Schema({
     status:{type:mongoose.Schema.Types.ObjectId,
         ref:'Status'
     },
+
+    commission: { type: Number, required: false },
+
     rating:{type: Number,required:false,min:0,max:5},
 
     loyer:{type: Number,required:false},
+
+    created_at: { type: Date, default: Date.now },
+    updated_at: { type: Date, default: Date.now }
 
     //total_charge_commercial:{type: Number, required:true}
 });
