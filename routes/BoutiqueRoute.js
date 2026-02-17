@@ -565,4 +565,22 @@ router.put('/update/location/and/loyer',async function(req,res){
     }
 })
 
+router.post('/getInfo/byId',async function(req,res){
+
+    try {
+            const {id} = req.body;
+            const getInfo = await BoutiqueModel.findById(id)
+                .populate('status')
+                .populate('id_categorie')
+            res.json(getInfo);
+        } 
+    catch (error) {
+        console.log(error);
+        
+    }
+
+    
+
+})
+
 module.exports = router;
