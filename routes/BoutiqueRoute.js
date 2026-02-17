@@ -566,10 +566,10 @@ router.put('/update/location/and/loyer',async function(req,res){
     }
 })
 
-router.post('/getInfo/byId',async function(req,res){
+router.get('/getInfo/byId',async function(req,res){
 
     try {
-            const {id} = req.body;
+            const {id} = req.query;
             const getInfo = await BoutiqueModel.findById(id)
                 .populate('status')
                 .populate('id_categorie')
