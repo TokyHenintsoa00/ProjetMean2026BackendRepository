@@ -10,7 +10,8 @@ const UserModel = require('../Models/UserModel');
 const BoutiqueModel = require('../Models/BoutiqueModel');
 const { validationResult } = require('express-validator');
 const fs = require('fs').promises;
-const upload = multer({ 
+const authMiddleware = require('../Middleware/verifyToken');
+const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // 10Mo max par fichier
 });
@@ -573,14 +574,197 @@ router.post('/getInfo/byId',async function(req,res){
                 .populate('status')
                 .populate('id_categorie')
             res.json(getInfo);
-        } 
+        }
     catch (error) {
         console.log(error);
-        
+
     }
 
-    
+
 
 })
+
+// ============ GESTION MA BOUTIQUE (manager connecte) ============
+
+// Recuperer la boutique du manager connecte
+router.get('/my-boutique', authMiddleware, async function(req, res) {
+    try {
+        const id_boutique = req.user.id_boutique_user;
+        if (!id_boutique) {
+            return res.status(404).json({ message: "Aucune boutique associee a ce compte" });
+        }
+        const boutique = await BoutiqueModel.findById(id_boutique)
+            .populate('status')
+            .populate('id_categorie');
+        if (!boutique) {
+            return res.status(404).json({ message: "Boutique non trouvee" });
+        }
+        res.json(boutique);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// Mettre a jour les informations de base de la boutique
+router.put('/update/info', authMiddleware, async function(req, res) {
+    try {
+        const id_boutique = req.user.id_boutique_user;
+        const { nom_boutique, description_boutique, location, id_categorie } = req.body;
+
+        const updateData = {};
+        if (nom_boutique) updateData.nom_boutique = nom_boutique;
+        if (description_boutique) updateData.description_boutique = description_boutique;
+        if (location !== undefined) updateData.location = location;
+        if (id_categorie !== undefined) {
+            // Accepte un tableau ou une chaine JSON
+            try {
+                updateData.id_categorie = typeof id_categorie === 'string' ? JSON.parse(id_categorie) : id_categorie;
+            } catch { updateData.id_categorie = []; }
+        }
+        updateData.updated_at = Date.now();
+
+        const updated = await BoutiqueModel.findByIdAndUpdate(
+            id_boutique,
+            { $set: updateData },
+            { new: true }
+        ).populate('status').populate('id_categorie');
+
+        if (!updated) {
+            return res.status(404).json({ message: "Boutique non trouvee" });
+        }
+
+        res.status(200).json({ message: "Informations mises a jour", boutique: updated });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// Mettre a jour les horaires d'ouverture
+router.put('/update/horaires', authMiddleware, async function(req, res) {
+    try {
+        const id_boutique = req.user.id_boutique_user;
+        let { horaires } = req.body;
+
+        if (typeof horaires === 'string') {
+            horaires = JSON.parse(horaires);
+        }
+
+        const updated = await BoutiqueModel.findByIdAndUpdate(
+            id_boutique,
+            { $set: { horaires: horaires, updated_at: Date.now() } },
+            { new: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "Boutique non trouvee" });
+        }
+
+        res.status(200).json({ message: "Horaires mis a jour", boutique: updated });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// Ajouter des photos a la galerie
+router.put('/update/photos', authMiddleware, uploadMultiple, async function(req, res) {
+    try {
+        const id_boutique = req.user.id_boutique_user;
+
+        let new_photos = [];
+        let new_logo = [];
+
+        if (req.files['photo_boutique'] && req.files['photo_boutique'].length > 0) {
+            for (const file of req.files['photo_boutique']) {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                const ext = path.extname(file.originalname);
+                const filename = `photo_boutique-${uniqueSuffix}${ext}`;
+                const uploadDir = path.join(__dirname, '../uploads/boutique');
+                try { await fs.access(uploadDir); } catch { await fs.mkdir(uploadDir, { recursive: true }); }
+                const filepath = path.join(uploadDir, filename);
+                await fs.writeFile(filepath, file.buffer);
+                new_photos.push({
+                    filename: filename,
+                    url: `/uploads/boutique/${filename}`,
+                    size: file.size,
+                    mimetype: file.mimetype
+                });
+            }
+        }
+
+        if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
+            for (const file of req.files['logo_boutique']) {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                const ext = path.extname(file.originalname);
+                const filename = `logo_boutique-${uniqueSuffix}${ext}`;
+                const uploadDir = path.join(__dirname, '../uploads/logo');
+                try { await fs.access(uploadDir); } catch { await fs.mkdir(uploadDir, { recursive: true }); }
+                const filepath = path.join(uploadDir, filename);
+                await fs.writeFile(filepath, file.buffer);
+                new_logo.push({
+                    filename: filename,
+                    url: `/uploads/logo/${filename}`,
+                    size: file.size,
+                    mimetype: file.mimetype
+                });
+            }
+        }
+
+        const updateOps = { updated_at: Date.now() };
+        const pushOps = {};
+
+        if (new_photos.length > 0) {
+            pushOps.photo_boutique = { $each: new_photos };
+        }
+        if (new_logo.length > 0) {
+            // Remplacer le logo
+            updateOps.logo = new_logo;
+        }
+
+        const updateQuery = { $set: updateOps };
+        if (Object.keys(pushOps).length > 0) {
+            updateQuery.$push = pushOps;
+        }
+
+        const updated = await BoutiqueModel.findByIdAndUpdate(id_boutique, updateQuery, { new: true });
+
+        if (!updated) {
+            return res.status(404).json({ message: "Boutique non trouvee" });
+        }
+
+        res.status(200).json({ message: "Photos mises a jour", boutique: updated });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// Supprimer une photo de la galerie
+router.put('/delete/photo', authMiddleware, async function(req, res) {
+    try {
+        const id_boutique = req.user.id_boutique_user;
+        const { photo_id } = req.body;
+
+        const updated = await BoutiqueModel.findByIdAndUpdate(
+            id_boutique,
+            {
+                $pull: { photo_boutique: { _id: photo_id } },
+                $set: { updated_at: Date.now() }
+            },
+            { new: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "Boutique non trouvee" });
+        }
+
+        res.status(200).json({ message: "Photo supprimee", boutique: updated });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
 
 module.exports = router;
