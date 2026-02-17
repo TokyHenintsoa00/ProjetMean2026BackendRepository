@@ -276,127 +276,7 @@ router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
         });
     }
 });
-// router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
-//     try {
-//         console.log('📥 Requête reçue');
-//                 console.log('Body:', req.body);
-//                 console.log('Files:', req.files);
-        
-//                 const errors = validationResult(req);
-//                 if (!errors.isEmpty()) {
-//                     return res.status(400).json({
-//                         message: "Erreur de validation",
-//                         errors: errors.array()
-//                     });
-//                 }
-                
-//         let photo_boutique = [];
-//         let logo_boutique = [];
-        
 
-
-//         if (req.files['photo_boutique'] && req.files['photo_boutique'].length > 0) {
-//             for (const file of req.files['photo_boutique']) {
-//                  const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-//                 const ext = path.extname(file.originalname);
-//                 const filename = `photo_boutique-${uniqueSuffix}${ext}`;
-//                 const uploadDir = path.join(__dirname, '../uploads/boutique');
-//                  try {
-//                     await fs.access(uploadDir);
-//                 } catch {
-//                     await fs.mkdir(uploadDir, { recursive: true });
-//                 }
-//                 const filepath = path.join(uploadDir, filename);
-//                 await fs.writeFile(filepath, file.buffer);
-
-//                 const photo_boutique_object = {
-//                     filename: filename,
-//                     url: `/uploads/photoBoutique/${filename}`,
-//                     size: file.size,
-//                     mimetype: file.mimetype
-//                 }
-
-//                 photo_boutique.push(photo_boutique_object);
-//             }
-//         }
-
-//         console.log("initialisation de boutique photo success");
-        
-//         if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
-//              for (const file of req.files['logo_boutique']) {
-//                 const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-//                 const ext = path.extname(file.originalname);
-//                 const filename = `logo_boutique-${uniqueSuffix}${ext}`;
-//                 const uploadDir = path.join(__dirname, '../uploads/logo');
-//                  try {
-//                     await fs.access(uploadDir);
-//                 } catch {
-//                     await fs.mkdir(uploadDir, { recursive: true });
-//                 }
-//                 const filepath = path.join(uploadDir, filename);
-//                 await fs.writeFile(filepath, file.buffer);
-
-//                 const logo_boutique_object = {
-//                     filename: filename,
-//                     url: `/uploads/logoboutique/${filename}`,
-//                     size: file.size,
-//                     mimetype: file.mimetype
-//                 }
-
-//                 logo_boutique.push(logo_boutique_object);
-//             }
-//         }
-
-//         console.log("Logo boutique traité:", logo_boutique.length);
-//         //find last user pour avoir son mail
-//         const last_user = await UserModel.findOne().sort({_id:-1});
-//         //console.log(last_user);
-        
-//         const id_manager = last_user._id;
-//         const status_boutique = "6986f4f4e38c7e27ea86c045";
-        
-//         const {nom_boutique,id_categorie,
-//                 description_boutique,horaires} = req.body;
-
-//         const boutiqueData = {
-            
-//             nom_boutique,
-//             manager_id:id_manager,
-//             description_boutique,
-//             logo:logo_boutique,
-//             photo_boutique:photo_boutique,
-//             id_categorie:id_categorie,
-//             location:null,
-//             horaires:horaires,
-//             comission :null,
-//             status:status_boutique,
-//             rating:null,
-//             loyer:null
-
-//         }
-        
-//         console.log(' Données utilisateur avant création:', JSON.stringify(boutiqueData, null, 2));
-      
-//         const newBoutique = new BoutiqueModel(boutiqueData);
-
-//         await newBoutique.save();
-//         res.status(201).json({
-//             message: "Utilisateur créé avec succès",
-//             boutique: {
-//                 id: newBoutique._id,
-//                 nom_boutique: newBoutique.nom_boutique,
-//                 logo: newBoutique.logo,
-//                 photo_boutique: newBoutique.photo_boutique
-//             }
-//         });
-
-//     } catch (error) {
-//          console.error('Erreur complète:', error);
-//         console.error('Stack:', error.stack);
-//         res.status(500).json({ message: "Erreur serveur", error: error.message });
-   
-//     }
-// })
 
 //router register boutique by admin
 router.post('/register/addBoutique/byAdmin',uploadMultiple,async(req,res)=>{
@@ -480,7 +360,21 @@ router.post('/register/addBoutique/byAdmin',uploadMultiple,async(req,res)=>{
         const status_boutique = "6986f4cce38c7e27ea86c043";
         
         const {nom_boutique,id_categorie,
-                location,loyer,description_boutique} = req.body;
+                location,loyer,description_boutique,horaires,commission} = req.body;
+
+        let parsedHoraires = horaires;
+        if (typeof horaires === 'string') {
+            try {
+                parsedHoraires = JSON.parse(horaires);
+                console.log('✅ Horaires parsés:', parsedHoraires);
+            } catch (error) {
+                console.error('❌ Erreur lors du parsing des horaires:', error);
+                return res.status(400).json({
+                    message: "Format des horaires invalide",
+                    error: error.message
+                });
+            }
+        }
 
         const boutiqueData = {
             
@@ -491,6 +385,8 @@ router.post('/register/addBoutique/byAdmin',uploadMultiple,async(req,res)=>{
             photo_boutique:photo_boutique,
             id_categorie:id_categorie,
             location:location,
+            horaires:parsedHoraires,
+            commission:commission,
             status:status_boutique,
             rating:null,
             loyer
