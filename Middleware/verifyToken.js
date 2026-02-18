@@ -9,20 +9,19 @@ const {verifyToken} = require('../utils/TokenConfig');
 
 
 const authMiddleware = (req, res, next) => {
-    const authHeader = req.cookies.token;
+    const token = req.cookies.token_user;
 
-    if (!authHeader) {
+    if (!token) {
         return res.status(401).json({ message: "Token manquant" });
     }
 
-    const token = authHeader.split(' ')[1]; // Bearer TOKEN
     const decoded = verifyToken(token);
 
     if (!decoded) {
         return res.status(401).json({ message: "Token invalide" });
     }
 
-    req.user = decoded; // id, email, role, username...
+    req.user = decoded; // id, email, role, id_boutique_user...
     next();
 };
 
