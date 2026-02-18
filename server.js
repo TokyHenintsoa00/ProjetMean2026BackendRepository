@@ -1,12 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT;
 const path = require('path');
-const cookieParser = require('cookie-parser');
+
 // Middleware
+app.use(cookieParser());
 app.use(cors({
   origin: 'http://localhost:4200', // URL de votre frontend Angular
     credentials: true, // Permet l'envoi de cookies
@@ -29,6 +31,7 @@ app.use('/role', require('./routes/RoleRoute'));
 app.use('/user',require('./routes/UserRoutes'));
 app.use('/categorie',require('./routes/CategorieRoutes'));
 app.use('/boutique',require('./routes/BoutiqueRoute'));
+app.use('/produit',require('./routes/ProduitRoutes'));
 app.use('/status',require('./routes/StatusRoutes'));
 app.use('/produit',require('./routes/ProduitRoutes'));
 app.listen(PORT, () => console.log(`Serveur démarré sur le port
