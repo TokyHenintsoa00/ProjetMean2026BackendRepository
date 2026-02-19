@@ -73,6 +73,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const PannierModel = require('../Models/Panier')
 const ProduitModel = require('../Models/ProduitModel');
 const authMiddleware = require('../Middleware/verifyToken');
 
@@ -127,7 +128,7 @@ router.get('/get/:id', authMiddleware, async (req, res) => {
         console.log(error);
         res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
-});
+}); 
 
 // POST creer un nouveau modele produit (sans prix ni stock — geres separement)
 router.post('/create', authMiddleware, upload.array('images', 10), async (req, res) => {
@@ -257,6 +258,45 @@ router.delete('/delete/:id', authMiddleware, async (req, res) => {
 // ROUTES VARIANTES
 // ====================================================================
 
+
+
+// POST ajouter une variante a un produit v1
+router.post('/variante/V1/add/:id_produit', authMiddleware, async (req, res) => {
+    try {
+        const { combinaison, reference, stock, prix_hors_taxe, prix_ttc } = req.body;
+
+        const nouvelleVariante = {
+            combinaison: combinaison || [],
+            is_default: false,
+            reference: reference || '',
+            stock: Number(stock) || 0,
+            historique_prix: []
+        };
+         const get_prix_ttc = (prix_hors_taxe) * 1.2;
+        // Prix initial optionnel
+        if (prix_hors_taxe) {
+            nouvelleVariante.historique_prix.push({
+                prix_hors_taxe: Number(prix_hors_taxe),
+                prix_ttc: get_prix_ttc
+            });
+        }
+
+        const updated = await ProduitModel.findByIdAndUpdate(
+            req.params.id_produit,
+            { $push: { variantes: nouvelleVariante } },
+            { new: true }
+        );
+
+        if (!updated) return res.status(404).json({ message: "Produit non trouve" });
+        res.json({ message: "Variante ajoutee", produit: updated });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+
+
 // POST ajouter une variante a un produit
 router.post('/variante/add/:id_produit', authMiddleware, async (req, res) => {
     try {
@@ -334,6 +374,36 @@ router.delete('/variante/delete/:id_produit/:id_variante', authMiddleware, async
 // ROUTES PRIX
 // ====================================================================
 
+
+// POST definir un nouveau prix pour une variante (ajoute a l'historique) V1 ajout valeur reel
+router.post('/prix/V1/set/:id_produit/:id_variante', authMiddleware, async (req, res) => {
+    try {
+        const { prix_hors_taxe, prix_ttc } = req.body;
+        if (!prix_hors_taxe) return res.status(400).json({ message: "prix_hors_taxe requis" });
+
+        const get_prix_ttc = (prix_hors_taxe) * 1.2;
+
+        const nouvelleEntree = {
+            prix_hors_taxe: Number(prix_hors_taxe),
+            prix_ttc: get_prix_ttc,
+            created_at: new Date()
+        };
+
+        const updated = await ProduitModel.findByIdAndUpdate(
+            req.params.id_produit,
+            { $push: { 'variantes.$[v].historique_prix': nouvelleEntree } },
+            { arrayFilters: [{ 'v._id': req.params.id_variante }], new: true }
+        );
+
+        if (!updated) return res.status(404).json({ message: "Produit ou variante non trouve" });
+        res.json({ message: "Prix defini", produit: updated });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+
 // POST definir un nouveau prix pour une variante (ajoute a l'historique)
 router.post('/prix/set/:id_produit/:id_variante', authMiddleware, async (req, res) => {
     try {
@@ -402,5 +472,66 @@ router.put('/stock/update/:id_produit/:id_variante', authMiddleware, async (req,
         res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
 });
+
+
+
+// ====================================================================
+// ROUTES PRODUIT SPECIAL CLIENT
+// ====================================================================
+
+//get all produit by id boutique
+router.get('/getAllProduit/byId',async function(req,res){
+
+    try 
+    {
+        const {id_boutique} = req.query;
+
+        const findProduitByIdBoutique = await ProduitModel.find({id_boutique:id_boutique});
+
+        res.json(findProduitByIdBoutique);
+    } catch (error) {
+        console.log(err);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+
+});
+
+// ====================================================================
+// ROUTES POUR ajout panier de  PRODUIT
+// ====================================================================
+// authMiddleware
+router.post('/ajout/panier',authMiddleware,async function(){
+
+    try 
+    {
+        
+        //get le id du client depuis le tokken
+        const id_user_client = req.user.id;
+
+        const {nom_produit,taille,quantite,prix_unitaire,total} = req.body;
+
+        const dataPanier = new PannierModel({
+            id_acheteur:id_user_client,
+            nom_produit,
+            taille,quantite,
+            prix_unitaire,
+            total
+        });
+
+        await dataPanier.save()
+        res.status(200).json({ 
+                    message: "Panier",
+                    token
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+
+    }
+
+    
+
+})
 
 module.exports = router;
