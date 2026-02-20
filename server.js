@@ -28,6 +28,7 @@ mongoose.connect(process.env.atlas_URL)
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/role', require('./routes/RoleRoute'));
+app.use('/verifyToken', require('./routes/SecurityRoute'));
 app.use('/user',require('./routes/UserRoutes'));
 app.use('/categorie',require('./routes/CategorieRoutes'));
 app.use('/boutique',require('./routes/BoutiqueRoute'));

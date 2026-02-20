@@ -10,7 +10,7 @@ const UserModel = require('../Models/UserModel');
 const BoutiqueModel = require('../Models/BoutiqueModel');
 const { validationResult } = require('express-validator');
 const fs = require('fs').promises;
-const authMiddleware = require('../Middleware/verifyToken');
+const {authMiddleware,managerMiddleware, clientMiddleware} = require('../Middleware/verifyToken');
 const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // 10Mo max par fichier

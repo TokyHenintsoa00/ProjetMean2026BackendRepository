@@ -24,4 +24,68 @@ const authMiddleware = (req, res, next) => {
     next();
 };
 
-module.exports = authMiddleware;
+
+
+
+// Middleware pour les routes Manager uniquement
+const managerMiddleware = (req, res, next) => {
+  const token = req.cookies.token_user;
+
+  try {
+    
+        if (!token) {
+            return res.status(401).json({ message: "Token manquant" });
+        }
+
+        const decoded = verifyToken(token);
+        if (!decoded) {
+            return res.status(401).json({ message: "Token invalide" });
+        }
+
+        if (decoded.role !== "697b0d19b784b5da2ab3ba22") {
+            return res.status(403).json({ message: "Accès refusé : réservé aux managers" });
+        }
+
+        req.user = decoded;
+        next();
+
+  } catch (error) {
+        console.log("erreur :" + error);
+        
+  }
+
+  
+};
+
+// Middleware pour les routes Client uniquement
+const clientMiddleware = (req, res, next) => {
+  const token = req.cookies.token_user;
+
+  try {
+    
+    if (!token) {
+        return res.status(401).json({ message: "Token manquant" });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+        return res.status(401).json({ message: "Token invalide" });
+    }
+
+    if (decoded.role !== "697b0d46b784b5da2ab3ba24") {
+        return res.status(403).json({ message: "Accès refusé : réservé aux clients" });
+    }
+
+    req.user = decoded;
+    next();
+
+  } catch (error) {
+        console.log("erreur : "+ error);
+        
+  }
+
+
+};
+
+
+module.exports = {authMiddleware,managerMiddleware,clientMiddleware};

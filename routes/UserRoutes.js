@@ -389,10 +389,11 @@ router.post('/login/user',async(req,res)=>{
         const{email,pwd,rememberMe} = req.body;
         //const pwd_bycript = pwd;
         const find_user = await userModel.findOne({email});  
+        //console.log(find_user);
         
         //find boutique user if exsiste
         const id_user = find_user._id;
-        console.log("ID USER :"+id_user);
+        //console.log("ID USER :"+id_user);
         
 
         //get id_boutique
@@ -400,7 +401,7 @@ router.post('/login/user',async(req,res)=>{
             manager_id: id_user
         });
 
-        //console.log(" " + boutique);
+        // console.log(" " + boutique);
 
         //const id_boutique = boutique._id;
         //console.log("id boutique : "+id_boutique);
@@ -465,7 +466,8 @@ router.post('/login/user',async(req,res)=>{
             res.cookie("token_user", token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production", // HTTPS en prod
-                sameSite: "strict",
+                // sameSite: "strict",
+                sameSite: "lax",
                 maxAge: cookieMaxAge
             });
 

@@ -75,8 +75,8 @@ const path = require('path');
 const fs = require('fs').promises;
 const PannierModel = require('../Models/PanierModel')
 const ProduitModel = require('../Models/ProduitModel');
-const authMiddleware = require('../Middleware/verifyToken');
-
+//const authMiddleware = require('../Middleware/verifyToken');
+const {authMiddleware,managerMiddleware, clientMiddleware} = require('../Middleware/verifyToken');
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
@@ -500,7 +500,7 @@ router.get('/getAllProduit/byId',async function(req,res){
 // ROUTES POUR ajout panier de  PRODUIT
 // ====================================================================
 // authMiddleware
-router.post('/ajout/panier',authMiddleware,async function(req,res){
+router.post('/ajout/panier',clientMiddleware,async function(req,res){
 
     try 
     {   
