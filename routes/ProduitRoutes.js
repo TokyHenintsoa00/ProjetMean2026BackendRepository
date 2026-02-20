@@ -73,7 +73,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
-const PannierModel = require('../Models/Panier')
+const PannierModel = require('../Models/PanierModel')
 const ProduitModel = require('../Models/ProduitModel');
 const authMiddleware = require('../Middleware/verifyToken');
 
@@ -500,28 +500,30 @@ router.get('/getAllProduit/byId',async function(req,res){
 // ROUTES POUR ajout panier de  PRODUIT
 // ====================================================================
 // authMiddleware
-router.post('/ajout/panier',authMiddleware,async function(){
+router.post('/ajout/panier',authMiddleware,async function(req,res){
 
     try 
-    {
-        
+    {   
         //get le id du client depuis le tokken
         const id_user_client = req.user.id;
 
-        const {nom_produit,taille,quantite,prix_unitaire,total} = req.body;
+        const {id_boutique,id_produit,nom_produit,
+                taille,quantite,prix_unitaire,total} = req.body;
 
         const dataPanier = new PannierModel({
             id_acheteur:id_user_client,
+            id_boutique,
+            id_produit,
             nom_produit,
-            taille,quantite,
+            taille,
+            quantite,
             prix_unitaire,
             total
         });
 
         await dataPanier.save()
         res.status(200).json({ 
-                    message: "Panier",
-                    token
+            message: "Panier",
         });
 
     } catch (error) {
@@ -530,7 +532,6 @@ router.post('/ajout/panier',authMiddleware,async function(){
 
     }
 
-    
 
 })
 
