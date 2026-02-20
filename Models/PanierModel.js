@@ -9,8 +9,8 @@ const PanierModel = new mongoose.Schema({
     taille:{type:String,required:true},
     quantite:{type:Number,required:true},
     prix_unitaire:{type:Number,required:true},
-    total:{type:Number,required:true}
-
+    total:{type:Number,required:true},
+    status:{type:mongoose.Schema.Types.ObjectId,ref:'Status'}
 
 });
 module.exports = mongoose.model('Pannier',PanierModel)

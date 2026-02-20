@@ -519,7 +519,8 @@ router.post('/ajout/panier',clientMiddleware,async function(req,res){
             taille,
             quantite,
             prix_unitaire,
-            total
+            total,
+            status:"6986f4f4e38c7e27ea86c045"
         });
 
         await dataPanier.save()
@@ -543,7 +544,9 @@ router.get('/getAll/panier/byId', clientMiddleware, async function(req, res){
         console.log(id_user_client);
         
         const findPanierClientById = await PanierModel.find({
-            id_acheteur: id_user_client
+            id_acheteur: id_user_client,
+            //status en attente => non payer 
+            status:"6986f4f4e38c7e27ea86c045"
         })
             .populate('id_produit')
 
@@ -557,6 +560,15 @@ router.get('/getAll/panier/byId', clientMiddleware, async function(req, res){
         console.log(error);
         return res.status(500).json({ message: "Erreur serveur" });
     }
+})
+
+
+router.post('/payment/AllPanier/byClient',async function(req,res){
+
+    //payment Money - total panier
+    // update status article panier user en paid
+    //update stock
+
 })
 
 module.exports = router;
