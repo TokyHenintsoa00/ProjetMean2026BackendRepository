@@ -8,13 +8,14 @@ const PORT = process.env.PORT;
 const path = require('path');
 
 // Middleware
-app.use(cookieParser());
+
 app.use(cors({
   origin: 'http://localhost:4200', // URL de votre frontend Angular
     credentials: true, // Permet l'envoi de cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
 // mongoose.connect('mongodb://127.0.0.1:27017/mall')
@@ -34,6 +35,6 @@ app.use('/categorie',require('./routes/CategorieRoutes'));
 app.use('/boutique',require('./routes/BoutiqueRoute'));
 app.use('/produit',require('./routes/ProduitRoutes'));
 app.use('/status',require('./routes/StatusRoutes'));
-app.use('/produit',require('./routes/ProduitRoutes'));
+
 app.listen(PORT, () => console.log(`Serveur démarré sur le port
 ${PORT}`));

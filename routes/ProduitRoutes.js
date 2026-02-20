@@ -77,6 +77,7 @@ const PannierModel = require('../Models/PanierModel')
 const ProduitModel = require('../Models/ProduitModel');
 //const authMiddleware = require('../Middleware/verifyToken');
 const {authMiddleware,managerMiddleware, clientMiddleware} = require('../Middleware/verifyToken');
+const PanierModel = require('../Models/PanierModel');
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
@@ -533,6 +534,29 @@ router.post('/ajout/panier',clientMiddleware,async function(req,res){
     }
 
 
+})
+
+//get panier client by id
+router.get('/getAll/panier/byId', clientMiddleware, async function(req, res){
+    try {
+        const id_user_client = req.user.id;
+        console.log(id_user_client);
+        
+        const findPanierClientById = await PanierModel.find({
+            id_acheteur: id_user_client
+        })
+            .populate('id_produit')
+
+        if(!findPanierClientById){
+            return res.status(404).json({ message: "Panier introuvable" });
+        }
+
+        return res.status(200).json(findPanierClientById);
+    }
+    catch(error) {
+        console.log(error);
+        return res.status(500).json({ message: "Erreur serveur" });
+    }
 })
 
 module.exports = router;
