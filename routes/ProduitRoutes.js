@@ -1,73 +1,3 @@
-// const express = require('express');
-// const router = express.Router();
-// const ProduitModel = require('../Models/ProduitModel');
-// const calculatorFunction = require('../utils/CalculatorFunction');
-// const authMiddleware = require('../Middleware/verifyToken');
-// const storage = multer.memoryStorage();
-// const upload = multer({ 
-//     storage: storage,
-//     limits: { fileSize: 10 * 1024 * 1024 } // 10Mo max par fichier
-// });
-
-
-// //register variante de produit
-// // =>get id produit
-// // add variante + 
-
-
-
-
-
-// //register produit sans variante
-// router.post('/register/addProduit',upload.array('photo_user', 1),authMiddlware,async(req,res)=>{
-
-//     try 
-//     {
-//         //get id_boutique
-//         const id_boutique = req.user.id;
-
-//         const photo = req.files.map(file => ({
-//             filename: file.originalname,
-//             url: '', // À remplir si vous sauvegardez sur un serveur de fichiers
-//             size: file.size,
-//             mimetype: file.mimetype
-//         }));
-
-//         const produit_content = new ProduitModel({
-//             id_boutique:id_boutique,
-//             nom_boutique:req.body.nom_boutique,
-//             prix_hors_taxe:req.body.prix_hors_taxe,
-//             image:photo,
-//             id_categorie:req.body.id_categorie,
-//             sous_categorie:req.body.sous_categorie,
-//             stock:req.body.stock,
-//             rating:null,
-//             total_avis:null,
-//             status:req.body.status,
-//             variante:null
-//         });
-
-//         await produit_content.save();
-//         res.status(200).json({message:"Role cree"});
-//         //au debut 
-//         // rating = 0 
-//         // total_avis = 0
-//         //variante = 0
-//     } catch (error) {
-//         console.log(error);
-//     }
-// })
-
-// model.exports = router
-
-
-// /**
-//  * Calcule la somme totale des produits
-//  * @param {Array} produits - [{ prix, quantite }]
-//  * @returns {Number}
-//  */
-
-
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -78,6 +8,7 @@ const ProduitModel = require('../Models/ProduitModel');
 //const authMiddleware = require('../Middleware/verifyToken');
 const {authMiddleware,managerMiddleware, clientMiddleware} = require('../Middleware/verifyToken');
 const PanierModel = require('../Models/PanierModel');
+const PromotionModel = require('../Models/PromotionModel');
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
@@ -105,7 +36,7 @@ async function saveImageFile(file) {
 // ====================================================================
 
 // GET tous les produits de la boutique connectee
-router.get('/my-products', authMiddleware, async (req, res) => {
+router.get('/my-products', managerMiddleware, async (req, res) => {
     try {
         const id_boutique = req.user.id_boutique_user;
         if (!id_boutique) return res.status(404).json({ message: "Aucune boutique associee" });
@@ -500,7 +431,6 @@ router.get('/getAllProduit/byId',async function(req,res){
 // ====================================================================
 // ROUTES POUR ajout panier de  PRODUIT
 // ====================================================================
-// authMiddleware
 router.post('/ajout/panier',clientMiddleware,async function(req,res){
 
     try 
@@ -570,5 +500,115 @@ router.post('/payment/AllPanier/byClient',async function(req,res){
     //update stock
 
 })
+
+router.put('/panier/delete',async function(req,res){
+
+    try
+    {
+        // get id panier pour update en 
+        const {_id} = req.body;
+        const update_id_panier_to_delete = await PanierModel.findByIdAndUpdate(
+            _id,
+            {
+                //status delete 
+                status: new mongoose.Types.ObjectId('69995db6e5af01e96a2a54f0')
+            },
+            {new:true}
+        );
+
+        res.status(200).json({
+            message: "Produit supprime dans le panier",
+        });
+
+    }
+    catch(error){
+        console.log(error);
+    }
+})
+
+
+// ====================================================================
+// ROUTES POUR ajout panier de  Promotion
+// ====================================================================
+
+
+
+router.post('/promotion', managerMiddleware, async function(req, res) {
+    try {
+        const id_boutique = req.user.id_boutique;
+        const { id_produit, variantes } = req.body;
+
+        // variantes = tableau envoyé par le frontend
+        if (!variantes || !Array.isArray(variantes) || variantes.length === 0) {
+            return res.status(400).json({ message: "Aucune variante en promotion fournie" });
+        }
+
+        // Construit un document PromotionModel par variante
+        const docs = variantes.map(v => {
+            const prix_remise = v.prix_unitaire * (v.remise / 100);
+            return {
+                id_boutique,
+                id_produit,
+                attribut:              v.attribut,
+                valeur:                v.valeur,
+                prix_unitaire:         v.prix_unitaire,
+                remise:                v.remise,
+                prix_promotion:        prix_remise,
+                date_debut_promotion:  new Date(v.date_debut_promotion),
+                date_fin_promotion:    new Date(v.date_fin_promotion),
+                created_at:            new Date(),
+                updated_at:            new Date(),
+            };
+        });
+
+        // insertMany → insère toutes les promotions en une seule requête DB
+        await PromotionModel.insertMany(docs);
+
+        res.status(200).json({
+            message: `${docs.length} promotion(s) enregistrée(s) avec succès`,
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+
+// router.post('/promotion',managerMiddleware, async function(req,res){
+//     try 
+//     {
+//         const get_id_boutique = req.user.id_boutique;
+
+//         const {id_produit,attribut,valeur,prix_unitaire,remise,
+//                 date_debut_promotion,date_fin_promotion} = req.body
+
+//         const prix_remise = (prix_unitaire) * (remise/100);
+
+//         const dataPromotion = new PromotionModel({
+//             id_boutique:get_id_boutique,
+//             id_produit,
+//             attribut,
+//             valeur,
+//             prix_unitaire,
+//             remise,
+//             prix_promotion:prix_remise,
+//             date_debut_promotion: new Date(date_debut_promotion),
+//             date_fin_promotion: new Date(date_fin_promotion),
+//             created_at: new Date(),
+//             updated_at: new Date()
+//         })
+
+//         await dataPromotion.save();
+//         res.status(200).json({ 
+//             message: "Promotion sucess",
+//         });
+
+//     } catch (error) {
+//         console.log(error);
+//         res.status(500).json({ message: "Erreur serveur", error: error.message });
+//     }
+// })
+
 
 module.exports = router;
