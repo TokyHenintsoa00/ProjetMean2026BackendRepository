@@ -6,10 +6,6 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT;
 const path = require('path');
-<<<<<<< HEAD
-
-=======
->>>>>>> 749ba0a634f90062791aa0db8e1311a2fd8ca4a2
 // Middleware
 app.use(cookieParser());
 app.use(cors({
