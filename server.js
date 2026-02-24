@@ -32,6 +32,8 @@ app.use('/user',require('./routes/UserRoutes'));
 app.use('/categorie',require('./routes/CategorieRoutes'));
 app.use('/boutique',require('./routes/BoutiqueRoute'));
 app.use('/produit',require('./routes/ProduitRoutes'));
+app.use('/commande',require('./routes/CommandeRoutes'));
+app.use('/promotion',require('./routes/PromotionRoutes'));
 app.use('/status',require('./routes/StatusRoutes'));
 app.use('/produit',require('./routes/ProduitRoutes'));
 app.listen(PORT, () => console.log(`Serveur démarré sur le port

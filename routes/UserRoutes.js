@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { body, validationResult } = require('express-validator');
 const { generateToken } = require('../utils/TokenConfig');
+const authMiddleware = require('../Middleware/verifyToken');
 const UserModel = require('../Models/UserModel');
 const storage = multer.memoryStorage();
 const path = require('path');
@@ -400,7 +401,7 @@ router.post('/login/user',async(req,res)=>{
             manager_id: id_user
         });
 
-        //console.log(" " + boutique);
+         const id_boutique  = boutique ? boutique._id : null;
 
         //const id_boutique = boutique._id;
         //console.log("id boutique : "+id_boutique);
@@ -1026,5 +1027,28 @@ router.put('/account/desactive',async function(req,res){
 //     }
 // });
 
+
+// GET utilisateur connecte (pour les guards frontend)
+router.get('/me', authMiddleware, async (req, res) => {
+    try {
+        const user = await userModel.findById(req.user.id).select('-pwd');
+        if (!user) return res.status(404).json({ message: "Utilisateur non trouve" });
+        const role = await roleModel.findById(user.role);
+        res.json({
+            user,
+            roleName: role ? role.nom_role : null,
+            id_boutique: req.user.id_boutique_user || null
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// POST deconnexion (clear cookie)
+router.post('/logout', (req, res) => {
+    res.clearCookie('token_user', { httpOnly: true, sameSite: 'strict' });
+    res.json({ message: "Deconnexion reussie" });
+});
 
 module.exports = router;
