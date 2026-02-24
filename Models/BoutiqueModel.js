@@ -26,9 +26,9 @@ const BoutiqueModel = new mongoose.Schema({
         mimetype: String
     }],
 
-    id_categorie:{type:mongoose.Schema.Types.ObjectId,
+    id_categorie:[{type:mongoose.Schema.Types.ObjectId,
         ref:'Categorie'
-    },
+    }],
 
     location:{type:String ,required:false},
 

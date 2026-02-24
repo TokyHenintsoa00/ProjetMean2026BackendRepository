@@ -19,8 +19,8 @@ const UserModel = new mongoose.Schema({
     resetPasswordToken: {type: String, default: undefined },
     resetPasswordExpiry: { type: Date, default: undefined },
     is_active:{type:Boolean , required:true},
-    created_at:{type:Date , required:true},
-    updated_at:{type:Date , required:true}
+    created_at:{type:Date , reqired:true},
+    updated_at:{type:Date , reqired:true}
 
 });
 
