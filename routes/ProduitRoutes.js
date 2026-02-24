@@ -99,7 +99,73 @@ async function saveImageFile(file) {
 }
 
 // ====================================================================
-// ROUTES MODELE PRODUIT
+// ROUTES PUBLIQUES (pas d'auth)
+// ====================================================================
+
+// GET tous les produits (public, avec filtres)
+router.get('/public/all', async (req, res) => {
+    try {
+        const { search, categorie, boutique, sort } = req.query;
+        const filter = {
+            id_boutique: { $ne: null },
+            'variantes.0': { $exists: true },
+            'variantes.historique_prix.0': { $exists: true }
+        };
+        if (search) filter.nom_produit = { $regex: search, $options: 'i' };
+        if (categorie) filter.id_categorie = categorie;
+        if (boutique) filter.id_boutique = boutique;
+
+        let sortOption = { created_at: -1 };
+        if (sort === 'prix_asc') sortOption = { 'variantes.historique_prix.prix_ttc': 1 };
+        if (sort === 'prix_desc') sortOption = { 'variantes.historique_prix.prix_ttc': -1 };
+        if (sort === 'nom_asc') sortOption = { nom_produit: 1 };
+        if (sort === 'nom_desc') sortOption = { nom_produit: -1 };
+
+        const produits = await ProduitModel.find(filter)
+            .populate('id_categorie')
+            .populate('id_boutique', 'nom_boutique')
+            .sort(sortOption);
+        res.json(produits);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// GET un produit par id (public)
+router.get('/public/:id', async (req, res) => {
+    try {
+        const produit = await ProduitModel.findById(req.params.id)
+            .populate('id_categorie')
+            .populate('id_boutique', 'nom_boutique');
+        if (!produit) return res.status(404).json({ message: "Produit non trouve" });
+        res.json(produit);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// GET produits d'une boutique (public)
+router.get('/public/by-boutique/:boutique_id', async (req, res) => {
+    try {
+        const produits = await ProduitModel.find({
+                id_boutique: req.params.boutique_id,
+                'variantes.0': { $exists: true },
+                'variantes.historique_prix.0': { $exists: true }
+            })
+            .populate('id_categorie')
+            .populate('id_boutique', 'nom_boutique')
+            .sort({ created_at: -1 });
+        res.json(produits);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// ====================================================================
+// ROUTES MODELE PRODUIT (auth requise)
 // ====================================================================
 
 // GET tous les produits de la boutique connectee
@@ -260,7 +326,7 @@ router.delete('/delete/:id', authMiddleware, async (req, res) => {
 // POST ajouter une variante a un produit
 router.post('/variante/add/:id_produit', authMiddleware, async (req, res) => {
     try {
-        const { combinaison, reference, stock, prix_hors_taxe, prix_ttc } = req.body;
+        const { combinaison, reference, stock, prix_hors_taxe, prix_ttc, devise } = req.body;
 
         const nouvelleVariante = {
             combinaison: combinaison || [],
@@ -274,7 +340,8 @@ router.post('/variante/add/:id_produit', authMiddleware, async (req, res) => {
         if (prix_hors_taxe) {
             nouvelleVariante.historique_prix.push({
                 prix_hors_taxe: Number(prix_hors_taxe),
-                prix_ttc: prix_ttc ? Number(prix_ttc) : null
+                prix_ttc: prix_ttc ? Number(prix_ttc) : null,
+                devise: devise || 'DT'
             });
         }
 
@@ -337,12 +404,13 @@ router.delete('/variante/delete/:id_produit/:id_variante', authMiddleware, async
 // POST definir un nouveau prix pour une variante (ajoute a l'historique)
 router.post('/prix/set/:id_produit/:id_variante', authMiddleware, async (req, res) => {
     try {
-        const { prix_hors_taxe, prix_ttc } = req.body;
+        const { prix_hors_taxe, prix_ttc, devise } = req.body;
         if (!prix_hors_taxe) return res.status(400).json({ message: "prix_hors_taxe requis" });
 
         const nouvelleEntree = {
             prix_hors_taxe: Number(prix_hors_taxe),
             prix_ttc: prix_ttc ? Number(prix_ttc) : null,
+            devise: devise || 'DT',
             created_at: new Date()
         };
 

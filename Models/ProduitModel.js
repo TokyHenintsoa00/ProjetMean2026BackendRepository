@@ -44,6 +44,7 @@ const mongoose = require('mongoose');
 const HistoriquePrixSchema = new mongoose.Schema({
     prix_hors_taxe: { type: Number, required: true },
     prix_ttc: { type: Number },
+    devise: { type: String, default: 'DT' },
     created_at: { type: Date, default: Date.now }
 });
 

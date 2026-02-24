@@ -6,7 +6,10 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT;
 const path = require('path');
+<<<<<<< HEAD
 
+=======
+>>>>>>> 749ba0a634f90062791aa0db8e1311a2fd8ca4a2
 // Middleware
 app.use(cookieParser());
 app.use(cors({
@@ -32,6 +35,8 @@ app.use('/user',require('./routes/UserRoutes'));
 app.use('/categorie',require('./routes/CategorieRoutes'));
 app.use('/boutique',require('./routes/BoutiqueRoute'));
 app.use('/produit',require('./routes/ProduitRoutes'));
+app.use('/commande',require('./routes/CommandeRoutes'));
+app.use('/promotion',require('./routes/PromotionRoutes'));
 app.use('/status',require('./routes/StatusRoutes'));
 app.use('/produit',require('./routes/ProduitRoutes'));
 app.listen(PORT, () => console.log(`Serveur démarré sur le port
