@@ -1,13 +1,17 @@
 const mongoose = require('mongoose');
 
-const BoxModel = new mongoose.Schema({
-
-    num_box:{type:String,required:true},
-    etage:{type:String , required:true},
-    zone:{type:String , required:true},
-    status:{type:mongoose.Schema.Types.ObjectId,ref:'Status'},
-    boutique_id:{type:mongoose.Schema.Types.ObjectId,ref:'Boutique'},
-    created_at:{type:Date,required:true }
+const BoxSchema = new mongoose.Schema({
+    numero: { type: String, required: true },
+    etage: { type: String, default: 'RDC' },
+    superficie: { type: Number },
+    mall_id: { type: mongoose.Schema.Types.ObjectId, default: null },
+    statut: {
+        type: String,
+        enum: ['libre', 'occupe', 'en_travaux'],
+        default: 'libre'
+    },
+    description: { type: String, default: '' },
+    created_at: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Box',BoxModel);
+module.exports = mongoose.model('Box', BoxSchema);
