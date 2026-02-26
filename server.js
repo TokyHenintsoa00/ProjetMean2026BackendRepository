@@ -38,5 +38,6 @@ app.use('/produit',require('./routes/ProduitRoutes'));
 app.use('/box',require('./routes/BoxRoutes'));
 app.use('/contrat',require('./routes/ContratRoutes'));
 app.use('/paiement',require('./routes/PaiementRoutes'));
+app.use('/dashboard/admin',require('./routes/DashboardAdminRoutes'));
 app.listen(PORT, () => console.log(`Serveur démarré sur le port
 ${PORT}`));
