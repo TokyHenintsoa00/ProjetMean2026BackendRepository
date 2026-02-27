@@ -91,6 +91,7 @@ router.get('/getAll/content/V1',async function(req,res){
             })
                 .populate('id_categorie')
                 .populate('manager_id')
+                .populate('status')
                 res.json(boutique);
     } catch (error) {
         console.log("l'erreur "+error);
@@ -361,7 +362,7 @@ router.post('/register/addBoutique/byAdmin',uploadMultiple,async(req,res)=>{
         const status_boutique = "6986f4cce38c7e27ea86c043";
         
         const {nom_boutique,id_categorie,
-                location,loyer,description_boutique,horaires,commission} = req.body;
+                description_boutique,horaires,commission} = req.body;
 
         let parsedHoraires = horaires;
         if (typeof horaires === 'string') {
@@ -385,13 +386,10 @@ router.post('/register/addBoutique/byAdmin',uploadMultiple,async(req,res)=>{
             logo:logo_boutique,
             photo_boutique:photo_boutique,
             id_categorie:id_categorie,
-            location:location,
             horaires:parsedHoraires,
             commission:commission,
             status:status_boutique,
             rating:null,
-            loyer
-
         }
         
         console.log(' Données utilisateur avant création:', JSON.stringify(boutiqueData, null, 2));
