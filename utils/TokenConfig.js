@@ -1,26 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-// Générer un token
-// const generateToken = (user) => {
-//   try 
-//   {
-//       return jwt.sign(
-//       {  id: user._id,
-//         email: user.email,
-//         role: user.role,
-//         nom_client:user.nom_client,
-//         prenom_client:user.nom_client
-//       }, 
-//       process.env.JWT_SECRET,
-//       { expiresIn: process.env.JWT_EXPIRES_IN }
-//     );  
-//   } catch (error) {
-//     console.log(error);
-    
-//   }
-  
-// };
-
 //generateToken avec remember me
 const generateToken = (user,expiresIn,id_boutique_user)=>{
   try 
