@@ -30,7 +30,7 @@ const BoutiqueModel = new mongoose.Schema({
         ref:'Categorie'
     }],
 
-    location:{type:String ,required:false},
+   
 
     horaires: [{
         jour: { type: String, required: true, enum: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] },
@@ -54,8 +54,6 @@ const BoutiqueModel = new mongoose.Schema({
     commission: { type: Number, required: false },
 
     rating:{type: Number,required:false,min:0,max:5},
-
-    loyer:{type: Number,required:false},
 
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now }
