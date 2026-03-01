@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const Paiement = require('../Models/PaiementModel');
+const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
+
+// Toutes les routes paiement sont réservées à l'admin
+router.use(authMiddleware, requireRole('admin'));
 
 // ─── GET ALL ───────────────────────────────────────────────────────────────────
 router.get('/getAll', async (req, res) => {

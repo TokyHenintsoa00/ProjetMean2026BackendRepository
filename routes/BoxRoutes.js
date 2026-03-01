@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const Box = require('../Models/BoxModel');
+const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
+
+// Toutes les routes box sont réservées à l'admin
+router.use(authMiddleware, requireRole('admin'));
 
 // GET all boxes
 router.get('/getAll', async (req, res) => {

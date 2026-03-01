@@ -3,6 +3,11 @@ const router = express.Router();
 const Contrat = require('../Models/ContratModel');
 const Paiement = require('../Models/PaiementModel');
 const Box = require('../Models/BoxModel');
+const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
+
+// Toutes les routes contrat sont réservées à l'admin
+router.use(authMiddleware, requireRole('admin'));
 
 // ─── GET ALL ───────────────────────────────────────────────────────────────────
 router.get('/getAll', async (req, res) => {

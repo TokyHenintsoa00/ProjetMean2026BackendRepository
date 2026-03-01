@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const CategorieModel = require('../Models/CategorieModel');
+const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
 
-router.post('/register/categorie',async(req,res)=>{
+// Admin seulement
+router.post('/register/categorie', authMiddleware, requireRole('admin'), async(req,res)=>{
     try 
     {
         const {nom,parent} = req.body;

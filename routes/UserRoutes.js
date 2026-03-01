@@ -11,6 +11,7 @@ const nodemailer = require('nodemailer');
 const { body, validationResult } = require('express-validator');
 const { generateToken } = require('../utils/TokenConfig');
 const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
 const UserModel = require('../Models/UserModel');
 const storage = multer.memoryStorage();
 const path = require('path');
@@ -22,11 +23,11 @@ const upload = multer({
 });
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     auth: {
-        user: process.env.BREVO_EMAIL, // Votre email Brevo
-        pass: process.env.BREVO_SMTP_KEY // Votre clé API Brevo
+        user: process.env.BREVO_EMAIL,
+        pass: process.env.BREVO_SMTP_KEY
     }
 });
 
@@ -315,8 +316,8 @@ router.post('/password/resetPassword', [
 });
 
 
-//-----function find one user---------------------------
-router.post('/find/role/by/email',async(req,res)=>{
+//-----function find one user — auth requise---------------------------
+router.post('/find/role/by/email', authMiddleware, async(req,res)=>{
     try{
         const {email} = req.body;
         const findUserByemail = await userModel
@@ -335,159 +336,78 @@ router.post('/find/role/by/email',async(req,res)=>{
 
 //route speclial admin
 router.post('/administrator/login/user', async function (req,res) {
-    try 
-    {
+    try {
         const {email,pwd,rememberMe} = req.body;
-        
-        const find_user = await userModel.findOne({email});  
-        
-        
+
+        const find_user = await userModel.findOne({email});
+        if (!find_user) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
+
         const compare_pwd = await bcrypt.compare(pwd,find_user.pwd);
+        if (!compare_pwd) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
 
-                if (!find_user&&!compare_pwd) {
-                    alert("email ou pwd non reconnue")
-                    console.log("email ou non reconnue");
-                }
+        // Récupérer le nom du rôle pour l'inclure dans le token
+        const roleDoc = await roleModel.findById(find_user.role);
+        const role_name = roleDoc?.nom_role || null;
 
-                //generateToken dans utils/tokenConfig
-                const tokenExpiration = rememberMe ? '30d' : '1d';
-                const cookieMaxAge = rememberMe 
-                    ? 30 * 24 * 60 * 60 * 1000  // 30 jours
-                    : 24 * 60 * 60 * 1000;       // 1 jour
-                const token = generateToken(find_user,tokenExpiration);
-                
-                //  STOCKER LE TOKEN 
-                // DANS UN COOKIE HTTP ONLY 
-                res.cookie("token_user", token, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === "production", // HTTPS en prod
-                    sameSite: "strict",
-                    maxAge: cookieMaxAge
-                });
+        const tokenExpiration = rememberMe ? '30d' : '1d';
+        const cookieMaxAge = rememberMe
+            ? 30 * 24 * 60 * 60 * 1000  // 30 jours
+            : 24 * 60 * 60 * 1000;       // 1 jour
+        const token = generateToken(find_user, tokenExpiration, null, role_name);
 
+        res.cookie("token_user", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: cookieMaxAge
+        });
 
-            res.status(200).json({
-                message: "Connexion réussie",
-                // token,
-                // find_user: {
-                //     id_user: find_user._id,
-                //     email_user: find_user.email,
-                //     role_user_id: find_user.role,
+        res.status(200).json({ message: "Connexion réussie" });
 
-                // }
-        }); 
-
-        
     } catch (error) {
-        
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
 })
 
 //route pour client
-router.post('/login/user',async(req,res)=>{
-    try 
-    {
-        const{email,pwd,rememberMe} = req.body;
-        //const pwd_bycript = pwd;
-        const find_user = await userModel.findOne({email});  
-        
-        //find boutique user if exsiste
-        const id_user = find_user._id;
-        console.log("ID USER :"+id_user);
-        
+router.post('/login/user', async(req,res)=>{
+    try {
+        const { email, pwd, rememberMe } = req.body;
 
-        //get id_boutique
-        const boutique = await boutiqueModel.findOne({
-            manager_id: id_user
+        const find_user = await userModel.findOne({email});
+        if (!find_user) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
+
+        const compare_pwd = await bcrypt.compare(pwd, find_user.pwd);
+        if (!compare_pwd) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
+
+        // Récupérer le nom du rôle pour l'inclure dans le token
+        const roleDoc = await roleModel.findById(find_user.role);
+        const role_name = roleDoc?.nom_role || null;
+
+        const tokenExpiration = rememberMe ? '30d' : '1d';
+        const cookieMaxAge = rememberMe
+            ? 30 * 24 * 60 * 60 * 1000  // 30 jours
+            : 24 * 60 * 60 * 1000;       // 1 jour
+
+        // Vérifier si l'utilisateur est manager d'une boutique
+        const boutique = await boutiqueModel.findOne({ manager_id: find_user._id });
+        const id_boutique = boutique ? boutique._id : null;
+
+        const token = generateToken(find_user, tokenExpiration, id_boutique, role_name);
+
+        res.cookie("token_user", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: cookieMaxAge
         });
 
-         const id_boutique  = boutique ? boutique._id : null;
+        res.status(200).json({ message: "Connexion réussie" });
 
-        //const id_boutique = boutique._id;
-        //console.log("id boutique : "+id_boutique);
-        
-
-        if (boutique == null) {
-                    
-            const compare_pwd = await bcrypt.compare(pwd,find_user.pwd);
-
-            if (!find_user&&!compare_pwd) {
-                alert("email ou pwd non reconnue")
-                console.log("email ou non reconnue");
-            }
-
-            //generateToken dans utils/tokenConfig
-            const tokenExpiration = rememberMe ? '30d' : '1d';
-            const cookieMaxAge = rememberMe 
-                ? 30 * 24 * 60 * 60 * 1000  // 30 jours
-                : 24 * 60 * 60 * 1000;       // 1 jour
-            const token = generateToken(find_user,tokenExpiration);
-            
-            //  STOCKER LE TOKEN 
-            // DANS UN COOKIE HTTP ONLY 
-            res.cookie("token_user", token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production", // HTTPS en prod
-                sameSite: "strict",
-                maxAge: cookieMaxAge
-            });
-
-
-            res.status(200).json({
-                message: "Connexion réussie",
-                // token,
-                // find_user: {
-                //     id_user: find_user._id,
-                //     email_user: find_user.email,
-                //     role_user_id: find_user.role,
-
-                // }
-            }); 
-
-
-        } else {
-            const id_boutique = boutique._id;
-            const compare_pwd = await bcrypt.compare(pwd,find_user.pwd);
-
-            if (!find_user&&!compare_pwd) {
-                alert("email ou pwd non reconnue")
-                console.log("email ou non reconnue");
-            }
-
-            //generateToken dans utils/tokenConfig
-            const tokenExpiration = rememberMe ? '30d' : '1d';
-            const cookieMaxAge = rememberMe 
-                ? 30 * 24 * 60 * 60 * 1000  // 30 jours
-                : 24 * 60 * 60 * 1000;       // 1 jour
-            const token = generateToken(find_user,tokenExpiration,id_boutique);
-            
-            //  STOCKER LE TOKEN 
-            // DANS UN COOKIE HTTP ONLY 
-            res.cookie("token_user", token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production", // HTTPS en prod
-                sameSite: "strict",
-                maxAge: cookieMaxAge
-            });
-
-
-            res.status(200).json({
-                message: "Connexion réussie",
-                // token,
-                // find_user: {
-                //     id_user: find_user._id,
-                //     email_user: find_user.email,
-                //     role_user_id: find_user.role,
-
-                // }
-            });
-
-        }
-
-        
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: "Erreur serveur", error: error.message });   
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
 });
 
@@ -567,9 +487,12 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
         const cookieMaxAge = rememberMe === 'true'
             ? 30 * 24 * 60 * 60 * 1000
             : 24 * 60 * 60 * 1000;
-        
-        const token = generateToken(newUser, tokenExpiration);
-        
+
+        const roleDoc = await roleModel.findById(newUser.role);
+        const role_name = roleDoc?.nom_role || null;
+
+        const token = generateToken(newUser, tokenExpiration, null, role_name);
+
         res.cookie("token_user", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
@@ -584,7 +507,7 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
                 nom_client: newUser.nom_client,
                 prenom_client: newUser.prenom_client,
                 email: newUser.email,
-                avatar: newUser.avatar // ✅ Retourner l'avatar
+                avatar: newUser.avatar
             }
         });
     } catch (error) {
@@ -594,8 +517,8 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
     }
 });
 
-//router pour add manager boutique
-router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
+//router pour add manager boutique — admin seulement
+router.post('/register/managerBoutique/byAdmin', authMiddleware, requireRole('admin'), upload.array('avatar', 1), [
     // ... validations mdp etc
        body('pwd')
             .notEmpty()
@@ -678,9 +601,12 @@ router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
         const cookieMaxAge = rememberMe === 'true'
             ? 30 * 24 * 60 * 60 * 1000
             : 24 * 60 * 60 * 1000;
-        
-        const token = generateToken(newUser, tokenExpiration);
-        
+
+        const roleDoc2 = await roleModel.findById(newUser.role);
+        const role_name2 = roleDoc2?.nom_role || null;
+
+        const token = generateToken(newUser, tokenExpiration, null, role_name2);
+
         res.cookie("token_user", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
@@ -695,7 +621,7 @@ router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
                 nom_client: newUser.nom_client,
                 prenom_client: newUser.prenom_client,
                 email: newUser.email,
-                avatar: newUser.avatar // ✅ Retourner l'avatar
+                avatar: newUser.avatar
             }
         });
     } catch (error) {
@@ -854,15 +780,19 @@ router.post('/register/user', upload.array('photo_user', 1),[
             updated_at: null
         });
         await newUser.save();
-         const tokenExpiration = rememberMe ? '30d' : '1d';
-         const cookieMaxAge = rememberMe 
+        const tokenExpiration = rememberMe ? '30d' : '1d';
+        const cookieMaxAge = rememberMe
             ? 30 * 24 * 60 * 60 * 1000  // => 30 jours
             : 24 * 60 * 60 * 1000;       // => 1 jour
-        const token = generateToken(newUser,tokenExpiration);
-        
+
+        const roleDocReg = await roleModel.findById(newUser.role);
+        const role_nameReg = roleDocReg?.nom_role || null;
+
+        const token = generateToken(newUser, tokenExpiration, null, role_nameReg);
+
         res.cookie("token_user", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", // HTTPS en prod
+            secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
             maxAge: cookieMaxAge
         });
@@ -897,8 +827,8 @@ router.get('/password/forgotPassword',async(req,res)=>{
     }
 })
 
-//find user manager by email 
-router.get('/findBy/email',async function (req,res) {
+//find user manager by email — admin seulement
+router.get('/findBy/email', authMiddleware, requireRole('admin'), async function (req,res) {
     try 
     {
         const {email} = req.body;
@@ -915,8 +845,8 @@ router.get('/findBy/email',async function (req,res) {
     }
 
 })
-//active account
-router.put('/account/active',async function (req,res) {
+//active account — admin seulement
+router.put('/account/active', authMiddleware, requireRole('admin'), async function (req,res) {
     try 
     {
          const {_id} = req.body;
@@ -950,8 +880,8 @@ router.put('/account/active',async function (req,res) {
 
 
 
-// desactive account
-router.put('/account/desactive',async function(req,res){
+// desactive account — admin seulement
+router.put('/account/desactive', authMiddleware, requireRole('admin'), async function(req,res){
     try 
     {
         const {_id} = req.body;

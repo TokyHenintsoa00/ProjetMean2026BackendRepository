@@ -3,9 +3,10 @@ const router = express.Router();
 const CommandeModel = require('../Models/CommandeModel');
 const ProduitModel = require('../Models/ProduitModel');
 const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
 
-// POST creer une commande (client)
-router.post('/create', authMiddleware, async (req, res) => {
+// POST creer une commande — client seulement
+router.post('/create', authMiddleware, requireRole('client'), async (req, res) => {
     try {
         const { boutique, lignes, adresse_livraison, mode_retrait, note_client } = req.body;
         if (!boutique || !lignes || lignes.length === 0) {
@@ -67,8 +68,8 @@ router.post('/create', authMiddleware, async (req, res) => {
     }
 });
 
-// GET mes commandes (client)
-router.get('/my-orders', authMiddleware, async (req, res) => {
+// GET mes commandes — client seulement
+router.get('/my-orders', authMiddleware, requireRole('client'), async (req, res) => {
     try {
         const commandes = await CommandeModel.find({ client: req.user.id })
             .populate('boutique', 'nom_boutique')
@@ -80,8 +81,8 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
     }
 });
 
-// GET commandes de ma boutique (manager)
-router.get('/boutique-orders', authMiddleware, async (req, res) => {
+// GET commandes de ma boutique — manager seulement
+router.get('/boutique-orders', authMiddleware, requireRole('manager'), async (req, res) => {
     try {
         const id_boutique = req.user.id_boutique_user;
         if (!id_boutique) return res.status(404).json({ message: "Aucune boutique associee" });
@@ -96,8 +97,8 @@ router.get('/boutique-orders', authMiddleware, async (req, res) => {
     }
 });
 
-// PUT mettre a jour le statut d'une commande (manager)
-router.put('/update-status/:id', authMiddleware, async (req, res) => {
+// PUT mettre a jour le statut d'une commande — manager seulement
+router.put('/update-status/:id', authMiddleware, requireRole('manager'), async (req, res) => {
     try {
         const { statut } = req.body;
         if (!statut) return res.status(400).json({ message: "statut requis" });
@@ -116,8 +117,8 @@ router.put('/update-status/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// GET toutes les commandes (admin)
-router.get('/all', authMiddleware, async (req, res) => {
+// GET toutes les commandes — admin seulement
+router.get('/all', authMiddleware, requireRole('admin'), async (req, res) => {
     try {
         const commandes = await CommandeModel.find()
             .populate('client', 'nom_client prenom_client email')
@@ -130,8 +131,8 @@ router.get('/all', authMiddleware, async (req, res) => {
     }
 });
 
-// GET stats commandes (admin)
-router.get('/stats', authMiddleware, async (req, res) => {
+// GET stats commandes — admin seulement
+router.get('/stats', authMiddleware, requireRole('admin'), async (req, res) => {
     try {
         const totalCommandes = await CommandeModel.countDocuments();
         const commandesParStatut = await CommandeModel.aggregate([
@@ -163,8 +164,8 @@ router.get('/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// PUT annuler commande (client — seulement si en_attente)
-router.put('/cancel/:id', authMiddleware, async (req, res) => {
+// PUT annuler commande — client seulement
+router.put('/cancel/:id', authMiddleware, requireRole('client'), async (req, res) => {
     try {
         const commande = await CommandeModel.findById(req.params.id);
         if (!commande) return res.status(404).json({ message: 'Commande non trouvée' });

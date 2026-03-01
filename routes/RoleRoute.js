@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const RoleModel = require('../Models/RoleModel');
+const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
 
-router.post('/register/user',async(req,res) =>{
+// Admin seulement
+router.post('/register/user', authMiddleware, requireRole('admin'), async(req,res) =>{
     try 
     {
         const {nom_role} = req.body;
