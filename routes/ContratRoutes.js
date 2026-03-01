@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Contrat = require('../Models/ContratModel');
 const Paiement = require('../Models/PaiementModel');
+const Box = require('../Models/BoxModel');
 
 // ─── GET ALL ───────────────────────────────────────────────────────────────────
 router.get('/getAll', async (req, res) => {
@@ -64,6 +65,15 @@ router.post('/create', async (req, res) => {
         });
 
         await contrat.save();
+
+        // Marquer le box comme occupé par cette boutique
+        if (box_id) {
+            await Box.findByIdAndUpdate(box_id, {
+                statut: 'occupe',
+                boutique_id: boutique_id
+            });
+        }
+
         const populated = await Contrat.findById(contrat._id)
             .populate('boutique_id', 'nom_boutique location')
             .populate('box_id', 'numero etage superficie');
@@ -108,12 +118,25 @@ router.put('/update/:id', async (req, res) => {
 router.put('/updateStatut/:id', async (req, res) => {
     try {
         const { statut } = req.body;
+
+        // Récupérer le contrat avant mise à jour pour avoir le box_id
+        const contratAvant = await Contrat.findById(req.params.id);
+        if (!contratAvant) return res.status(404).json({ message: 'Contrat non trouvé' });
+
         const contrat = await Contrat.findByIdAndUpdate(
             req.params.id,
             { statut },
             { new: true }
         );
-        if (!contrat) return res.status(404).json({ message: 'Contrat non trouvé' });
+
+        // Si le contrat est résilié ou expiré → libérer le box
+        if ((statut === 'resilie' || statut === 'expire') && contratAvant.box_id) {
+            await Box.findByIdAndUpdate(contratAvant.box_id, {
+                statut: 'libre',
+                boutique_id: null
+            });
+        }
+
         res.status(200).json({ message: 'Statut mis à jour', contrat });
     } catch (error) {
         console.error(error);

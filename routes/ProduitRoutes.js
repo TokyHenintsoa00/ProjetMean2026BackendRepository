@@ -72,9 +72,9 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs').promises;
 const ProduitModel = require('../Models/ProduitModel');
 const authMiddleware = require('../Middleware/verifyToken');
+const { uploadToCloud } = require('../utils/cloudinary');
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -82,17 +82,12 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-// Helper: sauvegarder un fichier image et retourner ses metadonnees
+// Helper: upload une image vers Cloudinary et retourner ses métadonnées
 async function saveImageFile(file) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    const filename = `produit-${uniqueSuffix}${ext}`;
-    const uploadDir = path.join(__dirname, '../uploads/produits');
-    try { await fs.access(uploadDir); } catch { await fs.mkdir(uploadDir, { recursive: true }); }
-    await fs.writeFile(path.join(uploadDir, filename), file.buffer);
+    const result = await uploadToCloud(file.buffer, 'mall/produits');
     return {
-        filename,
-        url: `/uploads/produits/${filename}`,
+        filename: result.public_id,
+        url: result.secure_url,
         size: file.size,
         mimetype: file.mimetype
     };

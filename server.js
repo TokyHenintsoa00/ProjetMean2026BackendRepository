@@ -5,12 +5,20 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT;
-const path = require('path');
 // Middleware
 app.use(cookieParser());
+const allowedOrigins = [
+    'http://localhost:4200',
+    process.env.FRONTEND_URL  // URL Render du frontend (ex: https://mon-app.onrender.com)
+].filter(Boolean);
+
 app.use(cors({
-  origin: 'http://localhost:4200', // URL de votre frontend Angular
-    credentials: true, // Permet l'envoi de cookies
+    origin: (origin, callback) => {
+        // Autoriser les requêtes sans origin (Postman, curl) et les origins connues
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -25,7 +33,6 @@ mongoose.connect(process.env.atlas_URL)
   .catch(err => console.error('Erreur MongoDB:', err));
 
 app.use(cookieParser());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/role', require('./routes/RoleRoute'));
 app.use('/user',require('./routes/UserRoutes'));
 app.use('/categorie',require('./routes/CategorieRoutes'));

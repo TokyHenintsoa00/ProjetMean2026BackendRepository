@@ -11,6 +11,7 @@ const BoutiqueModel = require('../Models/BoutiqueModel');
 const { validationResult } = require('express-validator');
 const fs = require('fs').promises;
 const authMiddleware = require('../Middleware/verifyToken');
+const { uploadToCloud } = require('../utils/cloudinary');
 const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // 10Mo max par fichier
@@ -162,26 +163,13 @@ router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
         
         if (req.files['photo_boutique'] && req.files['photo_boutique'].length > 0) {
             for (const file of req.files['photo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `photo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/boutique');
-                try {
-                    await fs.access(uploadDir);
-                } catch {
-                    await fs.mkdir(uploadDir, { recursive: true });
-                }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
-
-                const photo_boutique_object = {
-                    filename: filename,
-                    url: `/uploads/photoBoutique/${filename}`,
+                const result = await uploadToCloud(file.buffer, 'mall/boutique');
+                photo_boutique.push({
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
-                }
-
-                photo_boutique.push(photo_boutique_object);
+                });
             }
         }
 
@@ -189,26 +177,13 @@ router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
         
         if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
             for (const file of req.files['logo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `logo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/logo');
-                try {
-                    await fs.access(uploadDir);
-                } catch {
-                    await fs.mkdir(uploadDir, { recursive: true });
-                }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
-
-                const logo_boutique_object = {
-                    filename: filename,
-                    url: `/uploads/logoboutique/${filename}`,
+                const result = await uploadToCloud(file.buffer, 'mall/logo');
+                logo_boutique.push({
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
-                }
-
-                logo_boutique.push(logo_boutique_object);
+                });
             }
         }
 
@@ -303,53 +278,27 @@ router.post('/register/addBoutique/byAdmin',uploadMultiple,async(req,res)=>{
 
         if (req.files['photo_boutique'] && req.files['photo_boutique'].length > 0) {
             for (const file of req.files['photo_boutique']) {
-                 const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `photo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/boutique');
-                 try {
-                    await fs.access(uploadDir);
-                } catch {
-                    await fs.mkdir(uploadDir, { recursive: true });
-                }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
-
-                const photo_boutique_object = {
-                    filename: filename,
-                    url: `/uploads/photoBoutique/${filename}`,
+                const result = await uploadToCloud(file.buffer, 'mall/boutique');
+                photo_boutique.push({
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
-                }
-
-                photo_boutique.push(photo_boutique_object);
+                });
             }
         }
 
         console.log("initialisation de boutique photo success");
-        
-        if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
-             for (const file of req.files['logo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `logo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/logo');
-                 try {
-                    await fs.access(uploadDir);
-                } catch {
-                    await fs.mkdir(uploadDir, { recursive: true });
-                }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
 
-                const logo_boutique_object = {
-                    filename: filename,
-                    url: `/uploads/logoboutique/${filename}`,
+        if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
+            for (const file of req.files['logo_boutique']) {
+                const result = await uploadToCloud(file.buffer, 'mall/logo');
+                logo_boutique.push({
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
-                }
-
-                logo_boutique.push(logo_boutique_object);
+                });
             }
         }
 
@@ -676,16 +625,10 @@ router.put('/update/photos', authMiddleware, uploadMultiple, async function(req,
 
         if (req.files['photo_boutique'] && req.files['photo_boutique'].length > 0) {
             for (const file of req.files['photo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `photo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/boutique');
-                try { await fs.access(uploadDir); } catch { await fs.mkdir(uploadDir, { recursive: true }); }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
+                const result = await uploadToCloud(file.buffer, 'mall/boutique');
                 new_photos.push({
-                    filename: filename,
-                    url: `/uploads/boutique/${filename}`,
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
                 });
@@ -694,16 +637,10 @@ router.put('/update/photos', authMiddleware, uploadMultiple, async function(req,
 
         if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
             for (const file of req.files['logo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `logo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/logo');
-                try { await fs.access(uploadDir); } catch { await fs.mkdir(uploadDir, { recursive: true }); }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
+                const result = await uploadToCloud(file.buffer, 'mall/logo');
                 new_logo.push({
-                    filename: filename,
-                    url: `/uploads/logo/${filename}`,
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
                 });

@@ -5,6 +5,7 @@ const BoxSchema = new mongoose.Schema({
     etage: { type: String, default: 'RDC' },
     superficie: { type: Number },
     mall_id: { type: mongoose.Schema.Types.ObjectId, default: null },
+    boutique_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Boutique', default: null },
     statut: {
         type: String,
         enum: ['libre', 'occupe', 'en_travaux'],

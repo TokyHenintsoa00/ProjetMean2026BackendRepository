@@ -15,7 +15,7 @@ const UserModel = require('../Models/UserModel');
 const storage = multer.memoryStorage();
 const path = require('path');
 const { log } = require('console');
-const fs = require('fs').promises;
+const { uploadToCloud } = require('../utils/cloudinary');
 const upload = multer({ 
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // 10Mo max par fichier
@@ -508,28 +508,19 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
             });
         }
 
-        // Sauvegarder les fichiers avatar
+        // Sauvegarder les fichiers avatar (Cloudinary)
         let avatarData = [];
         if (req.files && req.files.length > 0) {
-            const uploadDir = path.join(__dirname, '../uploads/avataruser');
-            await fs.mkdir(uploadDir, { recursive: true });            
             for (const file of req.files) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `avatar-${uniqueSuffix}${ext}`;
-                const filepath = path.join(uploadDir, filename);
-                
-                await fs.writeFile(filepath, file.buffer);
-                
+                const result = await uploadToCloud(file.buffer, 'mall/avataruser');
                 const avatarObject = {
-                    filename: filename,
-                    url: `/uploads/avataruser/${filename}`,
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
                 };
-                
                 avatarData.push(avatarObject);
-                console.log('✅ Avatar préparé pour BDD:', avatarObject);
+                console.log('✅ Avatar uploadé sur Cloudinary:', avatarObject);
             }
         }
 
@@ -628,28 +619,19 @@ router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
             });
         }
 
-        // Sauvegarder les fichiers avatar
+        // Sauvegarder les fichiers avatar (Cloudinary)
         let avatarData = [];
         if (req.files && req.files.length > 0) {
-            const uploadDir = path.join(__dirname, '../uploads/avataruser');
-            await fs.mkdir(uploadDir, { recursive: true });            
             for (const file of req.files) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `avatar-${uniqueSuffix}${ext}`;
-                const filepath = path.join(uploadDir, filename);
-                
-                await fs.writeFile(filepath, file.buffer);
-                
+                const result = await uploadToCloud(file.buffer, 'mall/avataruser');
                 const avatarObject = {
-                    filename: filename,
-                    url: `/uploads/avataruser/${filename}`,
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
                 };
-                
                 avatarData.push(avatarObject);
-                console.log('✅ Avatar préparé pour BDD:', avatarObject);
+                console.log('✅ Avatar uploadé sur Cloudinary:', avatarObject);
             }
         }
 
