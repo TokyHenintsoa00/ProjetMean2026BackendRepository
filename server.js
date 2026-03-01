@@ -9,7 +9,8 @@ const PORT = process.env.PORT;
 app.use(cookieParser());
 const allowedOrigins = [
     'http://localhost:4200',
-    process.env.FRONTEND_URL  // URL Render du frontend (ex: https://mon-app.onrender.com)
+    'https://meanprojm1.vercel.app',
+    process.env.FRONTEND_URL
 ].filter(Boolean);
 
 app.use(cors({

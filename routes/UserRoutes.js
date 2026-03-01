@@ -358,7 +358,7 @@ router.post('/administrator/login/user', async function (req,res) {
         res.cookie("token_user", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: cookieMaxAge
         });
 
@@ -399,7 +399,7 @@ router.post('/login/user', async(req,res)=>{
         res.cookie("token_user", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: cookieMaxAge
         });
 
@@ -496,7 +496,7 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
         res.cookie("token_user", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: cookieMaxAge
         });
 
@@ -610,7 +610,7 @@ router.post('/register/managerBoutique/byAdmin', authMiddleware, requireRole('ad
         res.cookie("token_user", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: cookieMaxAge
         });
 
@@ -793,7 +793,7 @@ router.post('/register/user', upload.array('photo_user', 1),[
         res.cookie("token_user", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: cookieMaxAge
         });
 
@@ -959,7 +959,11 @@ router.get('/me', authMiddleware, async (req, res) => {
 
 // POST deconnexion (clear cookie)
 router.post('/logout', (req, res) => {
-    res.clearCookie('token_user', { httpOnly: true, sameSite: 'strict' });
+    res.clearCookie('token_user', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+    });
     res.json({ message: "Deconnexion reussie" });
 });
 
