@@ -565,26 +565,26 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
         
         await newUser.save();
         
-        console.log('✅ Utilisateur sauvegardé dans MongoDB');
-        console.log('🔍 newUser.avatar APRÈS save:', newUser.avatar);
+        // console.log('✅ Utilisateur sauvegardé dans MongoDB');
+        // console.log('🔍 newUser.avatar APRÈS save:', newUser.avatar);
         
-        // Vérifier en base
-        const verifyUser = await userModel.findById(newUser._id);
-        console.log('🔍 Avatar vérifié en BDD:', verifyUser.avatar);
+        // // Vérifier en base
+        // const verifyUser = await userModel.findById(newUser._id);
+        // console.log('🔍 Avatar vérifié en BDD:', verifyUser.avatar);
         
-        const tokenExpiration = rememberMe === 'true' ? '30d' : '1d';
-        const cookieMaxAge = rememberMe === 'true'
-            ? 30 * 24 * 60 * 60 * 1000
-            : 24 * 60 * 60 * 1000;
+        // const tokenExpiration = rememberMe === 'true' ? '30d' : '1d';
+        // const cookieMaxAge = rememberMe === 'true'
+        //     ? 30 * 24 * 60 * 60 * 1000
+        //     : 24 * 60 * 60 * 1000;
         
-        const token = generateToken(newUser, tokenExpiration);
+        // const token = generateToken(newUser, tokenExpiration);
         
-        res.cookie("token_user", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: cookieMaxAge
-        });
+        // res.cookie("token_user", token, {
+        //     httpOnly: true,
+        //     secure: process.env.NODE_ENV === "production",
+        //     sameSite: "strict",
+        //     maxAge: cookieMaxAge
+        // });
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
@@ -685,26 +685,26 @@ router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
         
         await newUser.save();
         
-        console.log('✅ Utilisateur sauvegardé dans MongoDB');
-        console.log('🔍 newUser.avatar APRÈS save:', newUser.avatar);
+        // console.log('✅ Utilisateur sauvegardé dans MongoDB');
+        // console.log('🔍 newUser.avatar APRÈS save:', newUser.avatar);
         
-        // Vérifier en base
-        const verifyUser = await userModel.findById(newUser._id);
-        console.log('🔍 Avatar vérifié en BDD:', verifyUser.avatar);
+        // // Vérifier en base
+        // const verifyUser = await userModel.findById(newUser._id);
+        // console.log('🔍 Avatar vérifié en BDD:', verifyUser.avatar);
         
-        const tokenExpiration = rememberMe === 'true' ? '30d' : '1d';
-        const cookieMaxAge = rememberMe === 'true'
-            ? 30 * 24 * 60 * 60 * 1000
-            : 24 * 60 * 60 * 1000;
+        // const tokenExpiration = rememberMe === 'true' ? '30d' : '1d';
+        // const cookieMaxAge = rememberMe === 'true'
+        //     ? 30 * 24 * 60 * 60 * 1000
+        //     : 24 * 60 * 60 * 1000;
         
-        const token = generateToken(newUser, tokenExpiration);
+        // const token = generateToken(newUser, tokenExpiration);
         
-        res.cookie("token_user", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: cookieMaxAge
-        });
+        // res.cookie("token_user", token, {
+        //     httpOnly: true,
+        //     secure: process.env.NODE_ENV === "production",
+        //     sameSite: "strict",
+        //     maxAge: cookieMaxAge
+        // });
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
@@ -896,6 +896,10 @@ router.post('/register/user', upload.array('photo_user', 1),[
     }
 });
 
+
+//
+
+
 //-------------- non finie 
 //--------- send email reset pwd------------------
 router.get('/password/forgotPassword',async(req,res)=>{
@@ -1051,4 +1055,25 @@ router.post('/logout', (req, res) => {
     res.json({ message: "Deconnexion reussie" });
 });
 
+
+// get all user (tous les client et manager)
+
+router.get('/getAll/client/manager', async function(req, res) {
+    try {
+        const users = await userModel.find({
+            role: { $in: ['697b0d19b784b5da2ab3ba22', '697b0d46b784b5da2ab3ba24'] }
+        })
+            .populate({ path: 'role', model: roleModel });
+        
+        res.status(200).json({
+            success: true,
+            data: users
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
 module.exports = router;
