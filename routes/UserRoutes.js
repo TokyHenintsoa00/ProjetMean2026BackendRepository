@@ -897,7 +897,6 @@ router.post('/register/user', upload.array('photo_user', 1),[
 });
 
 
-//
 
 
 //-------------- non finie 
@@ -1076,4 +1075,147 @@ router.get('/getAll/client/manager', async function(req, res) {
         });
     }
 });
+
+
+router.put('/update/avatar/user', upload.array('photo_user', 1), async function(req, res) {
+    try {
+        const user_id = req.body?.user_id || req.query.user_id;
+
+        if (!user_id) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'user_id est requis' 
+            });
+        }
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Aucun fichier envoyé' 
+            });
+        }
+
+        // Sauvegarder les fichiers avatar
+        let avatarData = [];
+        const uploadDir = path.join(__dirname, '../uploads/avataruser');
+        await fs.mkdir(uploadDir, { recursive: true });
+
+        for (const file of req.files) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const ext = path.extname(file.originalname);
+            const filename = `avatar-${uniqueSuffix}${ext}`;
+            const filepath = path.join(uploadDir, filename);
+
+            await fs.writeFile(filepath, file.buffer);
+
+            const avatarObject = {
+                filename: filename,
+                url: `/uploads/avataruser/${filename}`,
+                size: file.size,
+                mimetype: file.mimetype
+            };
+
+            avatarData.push(avatarObject);
+            console.log('✅ Avatar préparé pour BDD:', avatarObject);
+        }
+
+        const avatar = avatarData[0];
+
+        // 🔍 Récupérer l'ancien avatar pour suppression
+        const existingUser = await userModel.findById(user_id);
+        console.log("USERRRRRRRRRR"+existingUser);
+        
+        if (!existingUser) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Utilisateur non trouvé' 
+            });
+        }
+
+       // 🗑️ Supprimer l'ancien avatar si existant
+        if (existingUser.avatar && existingUser.avatar.filename) {
+            const oldFilePath = path.join(__dirname, '../uploads/avataruser', existingUser.avatar.filename);
+            try {
+                await fs.unlink(oldFilePath);
+                console.log('🗑️ Ancien avatar supprimé:', oldFilePath);
+            } catch (err) {
+                console.warn('⚠️ Impossible de supprimer l ancien avatar:', err.message);
+            }
+        }
+
+        // 💾 Mise à jour en BDD
+        existingUser.avatar = avatar;
+        await existingUser.save();
+
+        console.log('Avatar mis à jour pour user:', user_id);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Avatar mis à jour avec succès',
+            avatar: avatar
+        });
+
+    } catch (error) {
+        console.error('Erreur update avatar:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Erreur serveur', 
+            error: error.message 
+        });
+    }
+});
+
+
+router.delete('/delete/:user_id', async function(req, res) {
+    try {
+        const { user_id } = req.params;
+
+        if (!user_id) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'user_id est requis' 
+            });
+        }
+
+        // 🔍 Récupérer l'user
+        const existingUser = await userModel.findById(user_id);
+
+        if (!existingUser) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Utilisateur non trouvé' 
+            });
+        }
+
+        // 🗑️ Supprimer l'avatar si existant
+        if (existingUser.avatar && existingUser.avatar.filename) {
+            const oldFilePath = path.join(__dirname, '../uploads/avataruser', existingUser.avatar.filename);
+            try {
+                await fs.unlink(oldFilePath);
+                console.log('🗑️ Avatar supprimé:', oldFilePath);
+            } catch (err) {
+                console.warn('⚠️ Impossible de supprimer l avatar:', err.message);
+            }
+        }
+
+        // 💾 Suppression en BDD
+        await userModel.findByIdAndDelete(user_id);
+
+        console.log('✅ User supprimé:', user_id);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Utilisateur supprimé avec succès'
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur suppression user:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Erreur serveur', 
+            error: error.message 
+        });
+    }
+});
+
 module.exports = router;
