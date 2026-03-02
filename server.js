@@ -44,6 +44,7 @@ app.use('/promotion',require('./routes/PromotionRoutes'));
 app.use('/status',require('./routes/StatusRoutes'));
 app.use('/produit',require('./routes/ProduitRoutes'));
 app.use('/box',require('./routes/BoxRoutes'));
+app.use('/emplacement',require('./routes/EmplacementRoutes'));
 app.use('/contrat',require('./routes/ContratRoutes'));
 app.use('/paiement',require('./routes/PaiementRoutes'));
 app.use('/dashboard/admin',require('./routes/DashboardAdminRoutes'));

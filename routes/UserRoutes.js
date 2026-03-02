@@ -362,7 +362,7 @@ router.post('/administrator/login/user', async function (req,res) {
             maxAge: cookieMaxAge
         });
 
-        res.status(200).json({ message: "Connexion réussie" });
+        res.status(200).json({ message: "Connexion réussie", token });
 
     } catch (error) {
         console.log(error);
@@ -403,7 +403,7 @@ router.post('/login/user', async(req,res)=>{
             maxAge: cookieMaxAge
         });
 
-        res.status(200).json({ message: "Connexion réussie" });
+        res.status(200).json({ message: "Connexion réussie", token });
 
     } catch (error) {
         console.log(error);
@@ -502,6 +502,7 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
+            token,
             user: {
                 id: newUser._id,
                 nom_client: newUser.nom_client,
@@ -616,6 +617,7 @@ router.post('/register/managerBoutique/byAdmin', authMiddleware, requireRole('ad
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
+            token,
             user: {
                 id: newUser._id,
                 nom_client: newUser.nom_client,

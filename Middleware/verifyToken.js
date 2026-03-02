@@ -9,7 +9,15 @@ const {verifyToken} = require('../utils/TokenConfig');
 
 
 const authMiddleware = (req, res, next) => {
-    const token = req.cookies.token_user;
+    // Priorité 1 : cookie (même origin / SameSite=None prod)
+    // Priorité 2 : Authorization: Bearer <token> (cross-origin Vercel→Render)
+    let token = req.cookies.token_user;
+    if (!token) {
+        const authHeader = req.headers['authorization'];
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.slice(7);
+        }
+    }
 
     if (!token) {
         return res.status(401).json({ message: "Token manquant" });

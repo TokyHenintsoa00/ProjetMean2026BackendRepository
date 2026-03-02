@@ -10,7 +10,10 @@ router.use(authMiddleware, requireRole('admin'));
 // GET all boxes
 router.get('/getAll', async (req, res) => {
     try {
-        const boxes = await Box.find().sort({ etage: 1, numero: 1 });
+        const boxes = await Box.find()
+            .populate('etage_id', 'nom couleur')
+            .populate('zone_id', 'nom type couleur etage_id')
+            .sort({ numero: 1 });
         res.json(boxes);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -23,7 +26,9 @@ router.get('/getAll/withBoutique', async (req, res) => {
         const Contrat = require('../Models/ContratModel');
         const boxes = await Box.find()
             .populate('boutique_id', 'nom_boutique')
-            .sort({ etage: 1, numero: 1 });
+            .populate('etage_id', 'nom couleur')
+            .populate('zone_id', 'nom type couleur etage_id')
+            .sort({ numero: 1 });
 
         // Find all active contracts linked to these boxes
         const activeContrats = await Contrat.find({
