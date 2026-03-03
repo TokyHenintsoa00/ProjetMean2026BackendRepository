@@ -17,7 +17,9 @@ const generateToken = (user, expiresIn, id_boutique_user, role_name) => {
       payload.id_boutique_user = id_boutique_user;
     }
 
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
+    console.log("Token payload:", jwt.decode(token));
+    return token;
   } catch (error) {
     return null;
   }

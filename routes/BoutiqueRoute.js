@@ -144,7 +144,7 @@ const uploadMultiple = upload.fields([
 ]);
 
 //demande de boutique par le client — auth requise
-router.post('/register/demandeBoutique/client', authMiddleware, uploadMultiple, async(req,res)=>{
+router.post('/register/demandeBoutique/client', uploadMultiple, async(req,res)=>{
     try {
         console.log('📥 Requête reçue');
         console.log('Body:', req.body);
@@ -189,7 +189,10 @@ router.post('/register/demandeBoutique/client', authMiddleware, uploadMultiple, 
 
         console.log("Logo boutique traité:", logo_boutique.length);
         
-        const id_manager = req.user.id;
+       // Find last user pour avoir son mail
+        const last_user = await UserModel.findOne().sort({_id:-1});
+        
+        const id_manager = last_user._id;
         const status_boutique = "6986f4f4e38c7e27ea86c045";
         
         const {nom_boutique, id_categorie, description_boutique, horaires} = req.body;

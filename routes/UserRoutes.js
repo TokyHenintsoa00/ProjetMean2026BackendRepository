@@ -550,7 +550,7 @@ router.post('/login/user', async(req,res)=>{
         // Récupérer le nom du rôle pour l'inclure dans le token
         const roleDoc = await roleModel.findById(find_user.role);
         const role_name = roleDoc?.nom_role || null;
-
+        console.log(role_name);
         const tokenExpiration = rememberMe ? '30d' : '1d';
         const cookieMaxAge = rememberMe
             ? 30 * 24 * 60 * 60 * 1000  // 30 jours
@@ -665,7 +665,7 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
-            token,
+           
             user: {
                 id: newUser._id,
                 nom_client: newUser.nom_client,
@@ -777,7 +777,6 @@ router.post('/register/managerBoutique/byAdmin', authMiddleware, requireRole('ad
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
-            token,
             user: {
                 id: newUser._id,
                 nom_client: newUser.nom_client,
