@@ -665,7 +665,7 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
-            token,
+           
             user: {
                 id: newUser._id,
                 nom_client: newUser.nom_client,
@@ -777,7 +777,6 @@ router.post('/register/managerBoutique/byAdmin', authMiddleware, requireRole('ad
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
-            token,
             user: {
                 id: newUser._id,
                 nom_client: newUser.nom_client,
