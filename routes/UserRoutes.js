@@ -413,7 +413,7 @@ router.post('/password/resetPassword', [
 
         // Email de confirmation
         const confirmationMailOptions = {
-            from: `"${process.env.APP_NAME || 'Votre Application'}" <${process.env.BREVO_EMAIL}>`,
+            from: `"${process.env.APP_NAME || 'Votre Application'}" <${process.env.BREVO_SENDER_EMAIL}>`,
             to: email,
             subject: 'Mot de passe modifié avec succès',
             html: `
