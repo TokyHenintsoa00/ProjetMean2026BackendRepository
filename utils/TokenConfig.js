@@ -1,41 +1,25 @@
 const jwt = require('jsonwebtoken');
 
 //generateToken avec remember me
-const generateToken = (user,expiresIn,id_boutique_user)=>{
-  try 
-  {
+// role_name : valeur de nom_role depuis la collection RoleUser (ex: 'admin', 'manager', 'client')
+const generateToken = (user, expiresIn, id_boutique_user, role_name) => {
+  try {
+    const payload = {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      role_name: role_name || null,
+      nom_client: user.nom_client,
+      prenom_client: user.prenom_client,
+    };
 
-    if (id_boutique_user == null) 
-    {
-      return jwt.sign(
-        {  id: user._id,
-          email: user.email,
-          role: user.role,
-          nom_client:user.nom_client,
-          prenom_client:user.nom_client,
-        }, 
-        process.env.JWT_SECRET,
-        { expiresIn}
-      );   
-      
-    } else {
-      
-       return jwt.sign(
-      {  id: user._id,
-        email: user.email,
-        role: user.role,
-        nom_client:user.nom_client,
-        prenom_client:user.nom_client,
-        id_boutique_user:id_boutique_user
-      }, 
-      process.env.JWT_SECRET,
-      { expiresIn}
-    );   
+    if (id_boutique_user) {
+      payload.id_boutique_user = id_boutique_user;
     }
 
-    
+    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
   } catch (error) {
-    
+    return null;
   }
 }
 

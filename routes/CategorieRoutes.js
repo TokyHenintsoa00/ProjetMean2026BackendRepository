@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const CategorieModel = require('../Models/CategorieModel');
+const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
 
-router.post('/register/categorie',async(req,res)=>{
+// Admin seulement
+router.post('/register/categorie', authMiddleware, requireRole('admin'), async(req,res)=>{
     try 
     {
         const {nom,parent} = req.body;
@@ -29,6 +32,47 @@ router.get('/getAll/boutique',async(req,res)=>{
         res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
 })
+
+// Toutes les catégories avec parent peuplé (admin)
+router.get('/admin/all', authMiddleware, requireRole('admin'), async (req, res) => {
+    try {
+        const categories = await CategorieModel.find().populate('parent', 'nom');
+        res.json(categories);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// Modifier une catégorie (admin)
+router.put('/update/:id', authMiddleware, requireRole('admin'), async (req, res) => {
+    try {
+        const { nom, parent } = req.body;
+        const updated = await CategorieModel.findByIdAndUpdate(
+            req.params.id,
+            { nom, parent: parent || null },
+            { new: true }
+        );
+        if (!updated) return res.status(404).json({ message: "Catégorie introuvable" });
+        res.json({ message: "Catégorie mise à jour", categorie: updated });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
+// Supprimer une catégorie (admin)
+router.delete('/delete/:id', authMiddleware, requireRole('admin'), async (req, res) => {
+    try {
+        // Réaffecter les enfants à null (racine) si la catégorie supprimée était leur parent
+        await CategorieModel.updateMany({ parent: req.params.id }, { parent: null });
+        await CategorieModel.findByIdAndDelete(req.params.id);
+        res.json({ message: "Catégorie supprimée" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
 
 // Arbre hierarchique complet (pour le choix de categorie produit)
 router.get('/tree', async (req, res) => {

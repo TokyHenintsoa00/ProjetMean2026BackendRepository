@@ -11,19 +11,20 @@ const nodemailer = require('nodemailer');
 const { body, validationResult } = require('express-validator');
 const { generateToken } = require('../utils/TokenConfig');
 const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
 const UserModel = require('../Models/UserModel');
 const storage = multer.memoryStorage();
 const path = require('path');
 const { log } = require('console');
-const fs = require('fs').promises;
+const { uploadToCloud } = require('../utils/cloudinary');
 const upload = multer({ 
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // 10Mo max par fichier
 });
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     auth: {
         user: process.env.BREVO_EMAIL, // Votre email Brevo
         pass: process.env.BREVO_SMTP_KEY // Votre clé API Brevo
@@ -481,8 +482,8 @@ router.post('/password/resetPassword', [
 });
 
 
-//-----function find one user---------------------------
-router.post('/find/role/by/email',async(req,res)=>{
+//-----function find one user — auth requise---------------------------
+router.post('/find/role/by/email', async(req,res)=>{
     try{
         const {email} = req.body;
         const findUserByemail = await userModel
@@ -501,96 +502,74 @@ router.post('/find/role/by/email',async(req,res)=>{
 
 //route speclial admin
 router.post('/administrator/login/user', async function (req,res) {
-    try 
-    {
+    try {
         const {email,pwd,rememberMe} = req.body;
-        
-        const find_user = await userModel.findOne({email});  
-        
-        
+
+        const find_user = await userModel.findOne({email});
+        if (!find_user) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
+
         const compare_pwd = await bcrypt.compare(pwd,find_user.pwd);
+        if (!compare_pwd) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
 
-                if (!find_user&&!compare_pwd) {
-                    alert("email ou pwd non reconnue")
-                    console.log("email ou non reconnue");
-                }
+        // Récupérer le nom du rôle pour l'inclure dans le token
+        const roleDoc = await roleModel.findById(find_user.role);
+        const role_name = roleDoc?.nom_role || null;
 
-                //generateToken dans utils/tokenConfig
-                const tokenExpiration = rememberMe ? '30d' : '1d';
-                const cookieMaxAge = rememberMe 
-                    ? 30 * 24 * 60 * 60 * 1000  // 30 jours
-                    : 24 * 60 * 60 * 1000;       // 1 jour
-                const token = generateToken(find_user,tokenExpiration);
-                
-                //  STOCKER LE TOKEN 
-                // DANS UN COOKIE HTTP ONLY 
-                res.cookie("token_user", token, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === "production", // HTTPS en prod
-                    sameSite: "strict",
-                    maxAge: cookieMaxAge
-                });
+        const tokenExpiration = rememberMe ? '30d' : '1d';
+        const cookieMaxAge = rememberMe
+            ? 30 * 24 * 60 * 60 * 1000  // 30 jours
+            : 24 * 60 * 60 * 1000;       // 1 jour
+        const token = generateToken(find_user, tokenExpiration, null, role_name);
 
+        res.cookie("token_user", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            maxAge: cookieMaxAge
+        });
 
-            res.status(200).json({
-                message: "Connexion réussie",
-                // token,
-                // find_user: {
-                //     id_user: find_user._id,
-                //     email_user: find_user.email,
-                //     role_user_id: find_user.role,
+        res.status(200).json({ message: "Connexion réussie", token });
 
-                // }
-        }); 
-
-        
     } catch (error) {
-        
+        console.log(error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
 })
 
 //route pour client
-// route pour client
-router.post('/login/user', async (req, res) => {
+router.post('/login/user', async(req,res)=>{
     try {
         const { email, pwd, rememberMe } = req.body;
 
-        // 1. Vérifier si l'utilisateur existe
-        const find_user = await userModel.findOne({ email });
-        if (!find_user) {
-            return res.status(401).json({ message: "Email ou mot de passe incorrect" });
-        }
+        const find_user = await userModel.findOne({email});
+        if (!find_user) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
 
-        // 2. Vérifier le mot de passe
         const compare_pwd = await bcrypt.compare(pwd, find_user.pwd);
-        if (!compare_pwd) {
-            return res.status(401).json({ message: "Email ou mot de passe incorrect" });
-        }
+        if (!compare_pwd) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
 
-        // 3. Chercher une boutique liée à cet utilisateur
-        const id_user = find_user._id;
-        const boutique = await boutiqueModel.findOne({ manager_id: id_user });
-        const id_boutique = boutique ? boutique._id : null;
+        // Récupérer le nom du rôle pour l'inclure dans le token
+        const roleDoc = await roleModel.findById(find_user.role);
+        const role_name = roleDoc?.nom_role || null;
 
-        // 4. Générer le token
         const tokenExpiration = rememberMe ? '30d' : '1d';
         const cookieMaxAge = rememberMe
             ? 30 * 24 * 60 * 60 * 1000  // 30 jours
             : 24 * 60 * 60 * 1000;       // 1 jour
 
-        const token = id_boutique
-            ? generateToken(find_user, tokenExpiration, id_boutique)
-            : generateToken(find_user, tokenExpiration);
+        // Vérifier si l'utilisateur est manager d'une boutique
+        const boutique = await boutiqueModel.findOne({ manager_id: find_user._id });
+        const id_boutique = boutique ? boutique._id : null;
 
-        // 5. Stocker le token dans un cookie HTTP Only
+        const token = generateToken(find_user, tokenExpiration, id_boutique, role_name);
+
         res.cookie("token_user", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: cookieMaxAge
         });
 
-        res.status(200).json({ message: "Connexion réussie" });
+        res.status(200).json({ message: "Connexion réussie", token });
 
     } catch (error) {
         console.log(error);
@@ -615,28 +594,19 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
             });
         }
 
-        // Sauvegarder les fichiers avatar
+        // Sauvegarder les fichiers avatar (Cloudinary)
         let avatarData = [];
         if (req.files && req.files.length > 0) {
-            const uploadDir = path.join(__dirname, '../uploads/avataruser');
-            await fs.mkdir(uploadDir, { recursive: true });            
             for (const file of req.files) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `avatar-${uniqueSuffix}${ext}`;
-                const filepath = path.join(uploadDir, filename);
-                
-                await fs.writeFile(filepath, file.buffer);
-                
+                const result = await uploadToCloud(file.buffer, 'mall/avataruser');
                 const avatarObject = {
-                    filename: filename,
-                    url: `/uploads/avataruser/${filename}`,
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
                 };
-                
                 avatarData.push(avatarObject);
-                console.log('✅ Avatar préparé pour BDD:', avatarObject);
+                console.log('✅ Avatar uploadé sur Cloudinary:', avatarObject);
             }
         }
 
@@ -695,12 +665,13 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
+            token,
             user: {
                 id: newUser._id,
                 nom_client: newUser.nom_client,
                 prenom_client: newUser.prenom_client,
                 email: newUser.email,
-                avatar: newUser.avatar // ✅ Retourner l'avatar
+                avatar: newUser.avatar
             }
         });
     } catch (error) {
@@ -710,8 +681,8 @@ router.post('/register/permission/manager/boutique/byClient',upload.array('avata
     }
 });
 
-//router pour add manager boutique
-router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
+//router pour add manager boutique — admin seulement
+router.post('/register/managerBoutique/byAdmin', authMiddleware, requireRole('admin'), upload.array('avatar', 1), [
     // ... validations mdp etc
        body('pwd')
             .notEmpty()
@@ -735,28 +706,19 @@ router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
             });
         }
 
-        // Sauvegarder les fichiers avatar
+        // Sauvegarder les fichiers avatar (Cloudinary)
         let avatarData = [];
         if (req.files && req.files.length > 0) {
-            const uploadDir = path.join(__dirname, '../uploads/avataruser');
-            await fs.mkdir(uploadDir, { recursive: true });            
             for (const file of req.files) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `avatar-${uniqueSuffix}${ext}`;
-                const filepath = path.join(uploadDir, filename);
-                
-                await fs.writeFile(filepath, file.buffer);
-                
+                const result = await uploadToCloud(file.buffer, 'mall/avataruser');
                 const avatarObject = {
-                    filename: filename,
-                    url: `/uploads/avataruser/${filename}`,
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
                 };
-                
                 avatarData.push(avatarObject);
-                console.log('✅ Avatar préparé pour BDD:', avatarObject);
+                console.log('✅ Avatar uploadé sur Cloudinary:', avatarObject);
             }
         }
 
@@ -815,12 +777,13 @@ router.post('/register/managerBoutique/byAdmin', upload.array('avatar', 1), [
 
         res.status(201).json({
             message: "Utilisateur créé avec succès",
+            token,
             user: {
                 id: newUser._id,
                 nom_client: newUser.nom_client,
                 prenom_client: newUser.prenom_client,
                 email: newUser.email,
-                avatar: newUser.avatar // ✅ Retourner l'avatar
+                avatar: newUser.avatar
             }
         });
     } catch (error) {
@@ -979,16 +942,20 @@ router.post('/register/user', upload.array('photo_user', 1),[
             updated_at: null
         });
         await newUser.save();
-         const tokenExpiration = rememberMe ? '30d' : '1d';
-         const cookieMaxAge = rememberMe 
+        const tokenExpiration = rememberMe ? '30d' : '1d';
+        const cookieMaxAge = rememberMe
             ? 30 * 24 * 60 * 60 * 1000  // => 30 jours
             : 24 * 60 * 60 * 1000;       // => 1 jour
-        const token = generateToken(newUser,tokenExpiration);
-        
+
+        const roleDocReg = await roleModel.findById(newUser.role);
+        const role_nameReg = roleDocReg?.nom_role || null;
+
+        const token = generateToken(newUser, tokenExpiration, null, role_nameReg);
+
         res.cookie("token_user", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", // HTTPS en prod
-            sameSite: "strict",
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: cookieMaxAge
         });
 
@@ -1025,8 +992,8 @@ router.get('/password/forgotPassword',async(req,res)=>{
     }
 })
 
-//find user manager by email 
-router.get('/findBy/email',async function (req,res) {
+//find user manager by email — admin seulement
+router.get('/findBy/email', authMiddleware, requireRole('admin'), async function (req,res) {
     try 
     {
         const {email} = req.body;
@@ -1043,8 +1010,8 @@ router.get('/findBy/email',async function (req,res) {
     }
 
 })
-//active account
-router.put('/account/active',async function (req,res) {
+//active account — admin seulement
+router.put('/account/active', authMiddleware, requireRole('admin'), async function (req,res) {
     try 
     {
          const {_id} = req.body;
@@ -1078,8 +1045,8 @@ router.put('/account/active',async function (req,res) {
 
 
 
-// desactive account
-router.put('/account/desactive',async function(req,res){
+// desactive account — admin seulement
+router.put('/account/desactive', authMiddleware, requireRole('admin'), async function(req,res){
     try 
     {
         const {_id} = req.body;
@@ -1157,7 +1124,11 @@ router.get('/me', authMiddleware, async (req, res) => {
 
 // POST deconnexion (clear cookie)
 router.post('/logout', (req, res) => {
-    res.clearCookie('token_user', { httpOnly: true, sameSite: 'strict' });
+    res.clearCookie('token_user', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+    });
     res.json({ message: "Deconnexion reussie" });
 });
 

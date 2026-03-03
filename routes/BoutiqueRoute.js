@@ -11,6 +11,8 @@ const BoutiqueModel = require('../Models/BoutiqueModel');
 const { validationResult } = require('express-validator');
 const fs = require('fs').promises;
 const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
+const { uploadToCloud } = require('../utils/cloudinary');
 const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // 10Mo max par fichier
@@ -44,8 +46,8 @@ router.get('/getAll/status/active',async function(req,res){
 
 // get tous les boutique non valide v=>boutique:pendding
 
-// get avec toutes les infos 
-router.get('/getAll/content',async function(req,res){
+// get avec toutes les infos — admin seulement
+router.get('/getAll/content', authMiddleware, requireRole('admin'), async function(req,res){
     try {
         const boutique = await boutiqueModel.find()
             .populate('id_categorie')
@@ -59,8 +61,8 @@ router.get('/getAll/content',async function(req,res){
     
 });
 
-//get toutes les demande de boutique en attente
-router.get('/getAll/status/pending',async function(req,res){
+//get toutes les demande de boutique en attente — admin seulement
+router.get('/getAll/status/pending', authMiddleware, requireRole('admin'), async function(req,res){
     try {
            const boutique = await boutiqueModel.find({
              status: new mongoose.Types.ObjectId("6986f4f4e38c7e27ea86c045")
@@ -76,9 +78,8 @@ router.get('/getAll/status/pending',async function(req,res){
 });
 
 
-// get avec toutes les infos V1
-//avec status en ligne et suspend
-router.get('/getAll/content/V1',async function(req,res){
+// get avec toutes les infos V1 — admin seulement
+router.get('/getAll/content/V1', authMiddleware, requireRole('admin'), async function(req,res){
     try {
             //status active and suspend 
             const boutique = await boutiqueModel.find({
@@ -142,8 +143,8 @@ const uploadMultiple = upload.fields([
     { name: 'logo_boutique', maxCount: 1 }
 ]);
 
-//demande de boutique par le client
-router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
+//demande de boutique par le client — auth requise
+router.post('/register/demandeBoutique/client', authMiddleware, uploadMultiple, async(req,res)=>{
     try {
         console.log('📥 Requête reçue');
         console.log('Body:', req.body);
@@ -162,26 +163,13 @@ router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
         
         if (req.files['photo_boutique'] && req.files['photo_boutique'].length > 0) {
             for (const file of req.files['photo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `photo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/boutique');
-                try {
-                    await fs.access(uploadDir);
-                } catch {
-                    await fs.mkdir(uploadDir, { recursive: true });
-                }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
-
-                const photo_boutique_object = {
-                    filename: filename,
-                    url: `/uploads/photoBoutique/${filename}`,
+                const result = await uploadToCloud(file.buffer, 'mall/boutique');
+                photo_boutique.push({
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
-                }
-
-                photo_boutique.push(photo_boutique_object);
+                });
             }
         }
 
@@ -189,35 +177,19 @@ router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
         
         if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
             for (const file of req.files['logo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `logo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/logo');
-                try {
-                    await fs.access(uploadDir);
-                } catch {
-                    await fs.mkdir(uploadDir, { recursive: true });
-                }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
-
-                const logo_boutique_object = {
-                    filename: filename,
-                    url: `/uploads/logoboutique/${filename}`,
+                const result = await uploadToCloud(file.buffer, 'mall/logo');
+                logo_boutique.push({
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
-                }
-
-                logo_boutique.push(logo_boutique_object);
+                });
             }
         }
 
         console.log("Logo boutique traité:", logo_boutique.length);
         
-        // Find last user pour avoir son mail
-        const last_user = await UserModel.findOne().sort({_id:-1});
-        
-        const id_manager = last_user._id;
+        const id_manager = req.user.id;
         const status_boutique = "6986f4f4e38c7e27ea86c045";
         
         const {nom_boutique, id_categorie, description_boutique, horaires} = req.body;
@@ -280,8 +252,8 @@ router.post('/register/demandeBoutique/client',uploadMultiple,async(req,res)=>{
 });
 
 
-//router register boutique by admin
-router.post('/register/addBoutique/byAdmin',uploadMultiple,async(req,res)=>{
+//router register boutique by admin — admin seulement
+router.post('/register/addBoutique/byAdmin', authMiddleware, requireRole('admin'), uploadMultiple, async(req,res)=>{
     try 
     {
         console.log('📥 Requête reçue');
@@ -303,62 +275,34 @@ router.post('/register/addBoutique/byAdmin',uploadMultiple,async(req,res)=>{
 
         if (req.files['photo_boutique'] && req.files['photo_boutique'].length > 0) {
             for (const file of req.files['photo_boutique']) {
-                 const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `photo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/boutique');
-                 try {
-                    await fs.access(uploadDir);
-                } catch {
-                    await fs.mkdir(uploadDir, { recursive: true });
-                }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
-
-                const photo_boutique_object = {
-                    filename: filename,
-                    url: `/uploads/photoBoutique/${filename}`,
+                const result = await uploadToCloud(file.buffer, 'mall/boutique');
+                photo_boutique.push({
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
-                }
-
-                photo_boutique.push(photo_boutique_object);
+                });
             }
         }
 
         console.log("initialisation de boutique photo success");
-        
-        if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
-             for (const file of req.files['logo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `logo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/logo');
-                 try {
-                    await fs.access(uploadDir);
-                } catch {
-                    await fs.mkdir(uploadDir, { recursive: true });
-                }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
 
-                const logo_boutique_object = {
-                    filename: filename,
-                    url: `/uploads/logoboutique/${filename}`,
+        if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
+            for (const file of req.files['logo_boutique']) {
+                const result = await uploadToCloud(file.buffer, 'mall/logo');
+                logo_boutique.push({
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
-                }
-
-                logo_boutique.push(logo_boutique_object);
+                });
             }
         }
 
         console.log("Logo boutique traité:", logo_boutique.length);
-        //find last user pour avoir son mail
-        const last_user = await UserModel.findOne().sort({_id:-1});
-        //console.log(last_user);
-        
-        const id_manager = last_user._id;
+        // L'admin fournit le manager_id dans le body
+        const { nom_boutique: _n, manager_id: body_manager_id } = req.body;
+        const id_manager = body_manager_id || req.user.id;
         const status_boutique = "6986f4cce38c7e27ea86c043";
         
         const {nom_boutique,id_categorie,
@@ -415,8 +359,8 @@ router.post('/register/addBoutique/byAdmin',uploadMultiple,async(req,res)=>{
     }
 })
 
-// router register boutique
-router.post('/register/boutique',upload.array('photo_voiture', 10),async function(req,res){
+// router register boutique — admin seulement
+router.post('/register/boutique', authMiddleware, requireRole('admin'), upload.array('photo_voiture', 10), async function(req,res){
     try 
     {
         //%comission en fonction du categorie de boutique
@@ -451,8 +395,8 @@ router.post('/register/boutique',upload.array('photo_voiture', 10),async functio
     }
 });
 
-//suspend account
-router.put('/update/status/to/suspend',async function(req,res){
+//suspend account — admin seulement
+router.put('/update/status/to/suspend', authMiddleware, requireRole('admin'), async function(req,res){
    
     try {
         
@@ -488,8 +432,8 @@ router.put('/update/status/to/suspend',async function(req,res){
     
 });
 
-//activation de boutique
-router.put('/update/status/to/active',async function(req,res){
+//activation de boutique — admin seulement
+router.put('/update/status/to/active', authMiddleware, requireRole('admin'), async function(req,res){
     try 
     {
         const {_id} = req.body;
@@ -521,8 +465,8 @@ router.put('/update/status/to/active',async function(req,res){
     }
 })
 
-//update location and loyer
-router.put('/update/location/and/loyer',async function(req,res){
+//update location and loyer — admin seulement
+router.put('/update/location/and/loyer', authMiddleware, requireRole('admin'), async function(req,res){
     try {
         const { _id, location, loyer, commission } = req.body;
         
@@ -584,8 +528,8 @@ router.get('/getInfo/byId',async function(req,res){
 
 // ============ GESTION MA BOUTIQUE (manager connecte) ============
 
-// Recuperer la boutique du manager connecte
-router.get('/my-boutique', authMiddleware, async function(req, res) {
+// Recuperer la boutique du manager connecte — manager seulement
+router.get('/my-boutique', authMiddleware, requireRole('manager'), async function(req, res) {
     try {
         const id_boutique = req.user.id_boutique_user;
         if (!id_boutique) {
@@ -604,8 +548,8 @@ router.get('/my-boutique', authMiddleware, async function(req, res) {
     }
 });
 
-// Mettre a jour les informations de base de la boutique
-router.put('/update/info', authMiddleware, async function(req, res) {
+// Mettre a jour les informations de base de la boutique — manager seulement
+router.put('/update/info', authMiddleware, requireRole('manager'), async function(req, res) {
     try {
         const id_boutique = req.user.id_boutique_user;
         const { nom_boutique, description_boutique, location, id_categorie } = req.body;
@@ -639,8 +583,8 @@ router.put('/update/info', authMiddleware, async function(req, res) {
     }
 });
 
-// Mettre a jour les horaires d'ouverture
-router.put('/update/horaires', authMiddleware, async function(req, res) {
+// Mettre a jour les horaires d'ouverture — manager seulement
+router.put('/update/horaires', authMiddleware, requireRole('manager'), async function(req, res) {
     try {
         const id_boutique = req.user.id_boutique_user;
         let { horaires } = req.body;
@@ -666,8 +610,8 @@ router.put('/update/horaires', authMiddleware, async function(req, res) {
     }
 });
 
-// Ajouter des photos a la galerie
-router.put('/update/photos', authMiddleware, uploadMultiple, async function(req, res) {
+// Ajouter des photos a la galerie — manager seulement
+router.put('/update/photos', authMiddleware, requireRole('manager'), uploadMultiple, async function(req, res) {
     try {
         const id_boutique = req.user.id_boutique_user;
 
@@ -676,16 +620,10 @@ router.put('/update/photos', authMiddleware, uploadMultiple, async function(req,
 
         if (req.files['photo_boutique'] && req.files['photo_boutique'].length > 0) {
             for (const file of req.files['photo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `photo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/boutique');
-                try { await fs.access(uploadDir); } catch { await fs.mkdir(uploadDir, { recursive: true }); }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
+                const result = await uploadToCloud(file.buffer, 'mall/boutique');
                 new_photos.push({
-                    filename: filename,
-                    url: `/uploads/boutique/${filename}`,
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
                 });
@@ -694,16 +632,10 @@ router.put('/update/photos', authMiddleware, uploadMultiple, async function(req,
 
         if (req.files['logo_boutique'] && req.files['logo_boutique'].length > 0) {
             for (const file of req.files['logo_boutique']) {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const ext = path.extname(file.originalname);
-                const filename = `logo_boutique-${uniqueSuffix}${ext}`;
-                const uploadDir = path.join(__dirname, '../uploads/logo');
-                try { await fs.access(uploadDir); } catch { await fs.mkdir(uploadDir, { recursive: true }); }
-                const filepath = path.join(uploadDir, filename);
-                await fs.writeFile(filepath, file.buffer);
+                const result = await uploadToCloud(file.buffer, 'mall/logo');
                 new_logo.push({
-                    filename: filename,
-                    url: `/uploads/logo/${filename}`,
+                    filename: result.public_id,
+                    url: result.secure_url,
                     size: file.size,
                     mimetype: file.mimetype
                 });
@@ -739,8 +671,8 @@ router.put('/update/photos', authMiddleware, uploadMultiple, async function(req,
     }
 });
 
-// Supprimer une photo de la galerie
-router.put('/delete/photo', authMiddleware, async function(req, res) {
+// Supprimer une photo de la galerie — manager seulement
+router.put('/delete/photo', authMiddleware, requireRole('manager'), async function(req, res) {
     try {
         const id_boutique = req.user.id_boutique_user;
         const { photo_id } = req.body;

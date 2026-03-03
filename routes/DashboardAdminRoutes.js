@@ -3,6 +3,12 @@ const express = require('express');
 const router = express.Router();
 const userModel = require('../Models/UserModel');
 const mongoose = require('mongoose');
+const authMiddleware = require('../Middleware/verifyToken');
+const requireRole = require('../Middleware/requireRole');
+
+// Toutes les routes dashboard sont réservées à l'admin
+router.use(authMiddleware, requireRole('admin'));
+
 const TARGET_ROLES = [
     new mongoose.Types.ObjectId('697b0d19b784b5da2ab3ba22'),
     new mongoose.Types.ObjectId('697b0d46b784b5da2ab3ba24'),
