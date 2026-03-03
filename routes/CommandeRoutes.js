@@ -8,17 +8,25 @@ const requireRole = require('../Middleware/requireRole');
 // POST creer une commande — client seulement
 router.post('/create', authMiddleware, requireRole('client'), async (req, res) => {
     try {
-        const { boutique, lignes, adresse_livraison, mode_retrait, note_client } = req.body;
-        if (!boutique || !lignes || lignes.length === 0) {
-            return res.status(400).json({ message: "boutique et lignes sont requis" });
+        const { boutique: boutiqueParam, lignes, adresse_livraison, mode_retrait, note_client } = req.body;
+        if (!lignes || lignes.length === 0) {
+            return res.status(400).json({ message: "lignes sont requises" });
         }
 
+        let boutique = boutiqueParam;
         let total = 0;
         const lignesFinales = [];
 
         for (const ligne of lignes) {
             const produit = await ProduitModel.findById(ligne.produit);
             if (!produit) return res.status(404).json({ message: `Produit ${ligne.produit} non trouve` });
+
+            // Auto-derive boutique from first product if not provided
+            if (!boutique) {
+                boutique = produit.id_boutique;
+            } else if (produit.id_boutique.toString() !== boutique.toString()) {
+                return res.status(400).json({ message: "Tous les produits doivent appartenir a la meme boutique" });
+            }
 
             const variante = produit.variantes.id(ligne.variante_id);
             if (!variante) return res.status(404).json({ message: `Variante ${ligne.variante_id} non trouvee` });
