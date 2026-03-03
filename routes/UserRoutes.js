@@ -23,8 +23,8 @@ const upload = multer({
 });
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,
     auth: {
         user: process.env.BREVO_EMAIL, // Votre email Brevo
         pass: process.env.BREVO_SMTP_KEY // Votre clé API Brevo
@@ -535,42 +535,43 @@ router.post('/administrator/login/user', async function (req,res) {
         res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
 })
-
-//route pour client
 router.post('/login/user', async(req,res)=>{
     try {
         const { email, pwd, rememberMe } = req.body;
-
+ 
         const find_user = await userModel.findOne({email});
         if (!find_user) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
-
+ 
         const compare_pwd = await bcrypt.compare(pwd, find_user.pwd);
         if (!compare_pwd) return res.status(401).json({ message: "Email ou mot de passe incorrect" });
-
+ 
         // Récupérer le nom du rôle pour l'inclure dans le token
         const roleDoc = await roleModel.findById(find_user.role);
         const role_name = roleDoc?.nom_role || null;
+        if(role_name === 'admin'){
+            return res.status(401).json({ message: "Vous ne pouvez pas vous connecter en tant qu'admin" });
+        }
         console.log(role_name);
         const tokenExpiration = rememberMe ? '30d' : '1d';
         const cookieMaxAge = rememberMe
             ? 30 * 24 * 60 * 60 * 1000  // 30 jours
             : 24 * 60 * 60 * 1000;       // 1 jour
-
+ 
         // Vérifier si l'utilisateur est manager d'une boutique
         const boutique = await boutiqueModel.findOne({ manager_id: find_user._id });
         const id_boutique = boutique ? boutique._id : null;
-
+ 
         const token = generateToken(find_user, tokenExpiration, id_boutique, role_name);
-
+ 
         res.cookie("token_user", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: cookieMaxAge
         });
-
+ 
         res.status(200).json({ message: "Connexion réussie", token });
-
+ 
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Erreur serveur", error: error.message });
