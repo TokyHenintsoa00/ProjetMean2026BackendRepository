@@ -144,7 +144,7 @@ const uploadMultiple = upload.fields([
 ]);
 
 //demande de boutique par le client — auth requise
-router.post('/register/demandeBoutique/client', authMiddleware, uploadMultiple, async(req,res)=>{
+router.post('/register/demandeBoutique/client', uploadMultiple, async(req,res)=>{
     try {
         console.log('📥 Requête reçue');
         console.log('Body:', req.body);
